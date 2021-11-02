@@ -39,24 +39,24 @@ architecture Behavioral of test_fifo_reading is
             G_PERIOD    : INTEGER
         );
         port (
-            i_wr_clk : in STD_LOGIC;
-            i_rd_clk : in STD_LOGIC;
-            i_rst    : in STD_LOGIC;
-            i_rd_en  : in STD_LOGIC;
+            i_wr_clk        : in STD_LOGIC;
+            i_rd_clk        : in STD_LOGIC;
+            i_rst           : in STD_LOGIC;
+            i_freeze_screen : in STD_LOGIC;
+            i_rd_en         : in STD_LOGIC;
             
-            o_dout       : out STD_LOGIC_VECTOR(17 downto 0);
-            o_empty      : out STD_LOGIC;
-            o_valid      : out STD_LOGIC;
-            o_data_count : out STD_LOGIC_VECTOR(9 downto 0);
-            o_ph_exec    : out STD_LOGIC;
-            o_ph_dist    : out STD_LOGIC;
+            o_dout    : out STD_LOGIC_VECTOR(17 downto 0);
+            o_empty   : out STD_LOGIC;
+            o_valid   : out STD_LOGIC;
+            o_ph_exec : out STD_LOGIC;
+            o_ph_dist : out STD_LOGIC
             
             
-            o_mem_en     : out STD_LOGIC;
-            o_mem_addr   : out STD_LOGIC_VECTOR(10 downto 0);
-            o_mem_dout   : out STD_LOGIC_VECTOR(17 downto 0);
-            o_fifo_wr_en : out STD_LOGIC;
-            o_fifo_din   : out STD_LOGIC_VECTOR(17 downto 0)
+--            o_mem_en     : out STD_LOGIC;
+--            o_mem_addr   : out STD_LOGIC_VECTOR(10 downto 0);
+--            o_mem_dout   : out STD_LOGIC_VECTOR(17 downto 0);
+--            o_fifo_wr_en : out STD_LOGIC;
+--            o_fifo_din   : out STD_LOGIC_VECTOR(17 downto 0)
         );
     end component;
     
@@ -95,7 +95,6 @@ architecture Behavioral of test_fifo_reading is
     signal fifo_rd_en : STD_LOGIC;
     signal fifo_empty : STD_LOGIC;
     signal fifo_valid : STD_LOGIC;
-    signal fifo_data_count : STD_LOGIC_VECTOR(9 downto 0);
     
     -- Signals from the memory block
     signal mem_wr_en   : STD_LOGIC;
@@ -134,106 +133,106 @@ architecture Behavioral of test_fifo_reading is
     
 begin
     
-    i_HEENSim : HEENSim
-    generic map (
-        G_DATA_SIZE => 1,
-        G_PERIOD    => 125_000  -- Tspike = 1 ms
-    )
-    port map (
-        i_wr_clk => clk,
-        i_rd_clk => clk_150,
-        i_rst    => rst,
-        i_rd_en  => fifo_rd_en,
+--    i_HEENSim : HEENSim
+--    generic map (
+--        G_DATA_SIZE => 5,
+--        G_PERIOD    => 125_000  -- Tspike = 1 ms
+--    )
+--    port map (
+--        i_wr_clk        => clk,
+--        i_rd_clk        => clk_150,
+--        i_rst           => rst,
+--        i_freeze_screen => '0',
+--        i_rd_en         => fifo_rd_en,
         
-        o_dout       => fifo_dout,
-        o_empty      => fifo_empty,
-        o_valid      => fifo_valid,
-        o_data_count => fifo_data_count,
-        o_ph_exec    => ph_exec,
-        o_ph_dist    => ph_dist
+--        o_dout       => fifo_dout,
+--        o_empty      => fifo_empty,
+--        o_valid      => fifo_valid,
+--        o_ph_exec    => ph_exec,
+--        o_ph_dist    => ph_dist
         
---        o_mem_en     => mem_en,
---        o_mem_addr   => mem_addr,
---        o_mem_dout   => mem_dout,
---        o_fifo_wr_en => fifo_wr_en,
---        o_fifo_din   => fifo_din
-    );
+----        o_mem_en     => mem_en,
+----        o_mem_addr   => mem_addr,
+----        o_mem_dout   => mem_dout,
+----        o_fifo_wr_en => fifo_wr_en,
+----        o_fifo_din   => fifo_din
+--    );
     
-    i_blk_mem_gen_1 : blk_mem_gen_1
-    port map (
-        clka   => clk_150,
-        ena    => mem_wr_en,
-        wea(0) => mem_wr_we,
-        addra  => mem_wr_addr,
-        dina   => mem_wr_din,
-        douta  => open,
+--    i_blk_mem_gen_1 : blk_mem_gen_1
+--    port map (
+--        clka   => clk_150,
+--        ena    => mem_wr_en,
+--        wea(0) => mem_wr_we,
+--        addra  => mem_wr_addr,
+--        dina   => mem_wr_din,
+--        douta  => open,
         
-        clkb   => clk_150,
-        enb    => '0',
-        web(0) => '0',
-        addrb  => (9 downto 0 => '0'),
-        dinb   => (C_MAX_ID downto 0 => '0'),
-        doutb  => open
-    );
+--        clkb   => clk_150,
+--        enb    => '0',
+--        web(0) => '0',
+--        addrb  => (9 downto 0 => '0'),
+--        dinb   => (C_MAX_ID downto 0 => '0'),
+--        doutb  => open
+--    );
     
-    -- Generate the clock
-    clk            <= not clk     after 4 ns;     -- 125 MHz
-    clk_150        <= not clk_150 after 3.33 ns;  -- 150 MHz
+--    -- Generate the clock
+--    clk            <= not clk     after 4 ns;     -- 125 MHz
+--    clk_150        <= not clk_150 after 3.33 ns;  -- 150 MHz
     
-    end_screen_clk <= not end_screen_clk after 8 ms;
+--    end_screen_clk <= not end_screen_clk after 8 ms;
     
-    process(clk_150)
-    begin
-        if rising_edge(clk_150) then
-            if end_screen_prev_clk = '0' and end_screen_clk = '1' then
-                end_screen_prev_clk <= end_screen_clk;
-                end_screen <= '1';
-            else
-                end_screen_prev_clk <= end_screen_clk;
-                end_screen <= '0';
-            end if;
-        end if;
-    end process;
+--    process(clk_150)
+--    begin
+--        if rising_edge(clk_150) then
+--            if end_screen_prev_clk = '0' and end_screen_clk = '1' then
+--                end_screen_prev_clk <= end_screen_clk;
+--                end_screen <= '1';
+--            else
+--                end_screen_prev_clk <= end_screen_clk;
+--                end_screen <= '0';
+--            end if;
+--        end if;
+--    end process;
     
-    test_read_fifo_spikes : entity work.read_fifo_spikes
-    port map (
-        i_clk         => clk_150,
-        i_rst         => rst,
-        i_ph_dist     => ph_dist,
-        i_empty       => fifo_empty,
-        i_valid       => fifo_valid,
-        i_fifo_dout   => fifo_dout,
-        i_data_count  => fifo_data_count,
-        i_end_screen  => end_screen,
+--    test_read_fifo_spikes : entity work.read_fifo_spikes
+--    port map (
+--        i_clk           => clk_150,
+--        i_rst           => rst,
+--        i_freeze_screen => '0',
+--        i_ph_dist       => ph_dist,
+--        i_empty         => fifo_empty,
+--        i_valid         => fifo_valid,
+--        i_fifo_dout     => fifo_dout,
+--        i_end_screen    => end_screen,
         
-        o_fifo_rd_en  => fifo_rd_en,
-        o_mem_wr_en   => mem_wr_en,
-        o_mem_wr_we   => mem_wr_we,
-        o_mem_wr_addr => mem_wr_addr,
-        o_mem_wr_din  => mem_wr_din,
-        o_current_ts  => current_ts
+--        o_fifo_rd_en  => fifo_rd_en,
+--        o_mem_wr_en   => mem_wr_en,
+--        o_mem_wr_we   => mem_wr_we,
+--        o_mem_wr_addr => mem_wr_addr,
+--        o_mem_wr_din  => mem_wr_din,
+--        o_current_ts  => current_ts
         
         
---        o_state                => state               ,
---        o_neuron_id            => neuron_id           ,
---        o_id_value             => id_value            ,
---        o_buffer_en            => buffer_en           ,
---        o_buffer_we            => buffer_we           ,
---        o_buffer_addr          => buffer_addr         ,
---        o_buffer_din           => buffer_din          ,
---        o_buffer_dout          => buffer_dout         ,
---        o_buffer_cnt           => buffer_cnt          ,
---        o_transfer_from_buffer => transfer_from_buffer,
---        o_transfer_addr        => transfer_addr       
-    );
+----        o_state                => state               ,
+----        o_neuron_id            => neuron_id           ,
+----        o_id_value             => id_value            ,
+----        o_buffer_en            => buffer_en           ,
+----        o_buffer_we            => buffer_we           ,
+----        o_buffer_addr          => buffer_addr         ,
+----        o_buffer_din           => buffer_din          ,
+----        o_buffer_dout          => buffer_dout         ,
+----        o_buffer_cnt           => buffer_cnt          ,
+----        o_transfer_from_buffer => transfer_from_buffer,
+----        o_transfer_addr        => transfer_addr       
+--    );
     
-    -- Testbench sequence
-    process is
-    begin
-        wait for 0.1 us;
-        rst <= '0';
-        wait for 16 ms;
+--    -- Testbench sequence
+--    process is
+--    begin
+--        wait for 0.1 us;
+--        rst <= '0';
+--        wait for 16 ms;
         
-    end process;
+--    end process;
     
 end Behavioral;

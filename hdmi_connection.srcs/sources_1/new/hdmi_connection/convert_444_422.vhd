@@ -40,7 +40,7 @@ end convert_444_422;
 
 
 architecture Behavioral of convert_444_422 is
-
+    
     signal r_a      : STD_LOGIC_VECTOR(7 downto 0);
     signal g_a      : STD_LOGIC_VECTOR(7 downto 0);
     signal b_a      : STD_LOGIC_VECTOR(7 downto 0);
@@ -69,20 +69,20 @@ begin
                 o_pair_start <= '0';
             end if;
             
-            o_r1     <= r_a & "0";
-            o_g1     <= g_a & "0";
-            o_b1     <= b_a & "0";
-            o_hsync  <= h_a;
-            o_vsync  <= v_a;
-            o_de     <= d_a;
+            r_a      <= i_r;
+            g_a      <= i_g;
+            b_a      <= i_b;
+            h_a      <= i_hsync;
+            v_a      <= i_vsync;
+            d_a      <= i_de;
             d_a_last <= d_a;
             
-            r_a <= i_r;
-            g_a <= i_g;
-            b_a <= i_b;
-            h_a <= i_hsync;
-            v_a <= i_vsync;
-            d_a <= i_de;
+            o_r1    <= r_a & "0";
+            o_g1    <= g_a & "0";
+            o_b1    <= b_a & "0";
+            o_hsync <= h_a;
+            o_vsync <= v_a;
+            o_de    <= d_a;
             
         end if;
     end process;

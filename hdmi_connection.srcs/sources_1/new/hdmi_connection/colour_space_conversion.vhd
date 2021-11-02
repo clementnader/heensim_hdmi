@@ -57,9 +57,9 @@ architecture Behavioral of colour_space_conversion is
     signal de_delay : STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
 
 begin
-    --  y = ( 8432 * r + 16425 * g +  3176 * B) / 32768 + 16;
-    -- cb = (-4818 * r -  9527 * g + 14345 * B) / 32768 + 128;
-    -- cr = (14345 * r - 12045 * g -  2300 * B) / 32768 + 128; 
+    --  y = ( 8432 * r + 16425 * g +  3176 * b) / 32768 + 16;
+    -- cb = (-4818 * r -  9527 * g + 14345 * b) / 32768 + 128;
+    -- cr = (14345 * r - 12045 * g -  2300 * b) / 32768 + 128; 
     
     c1   <= x"002000000000";  
     a_r1 <= "000000" & i_r1 & x"000" & "000";
@@ -71,29 +71,27 @@ begin
     a_g2 <= "000000" & i_g2 & x"000" & "000";
     a_b2 <= "000000" & i_b2 & x"000" & "000";
     
-    b_r1 <= x"20F0"&"00";
-    b_g1 <= x"4029"&"00";
-    b_b1 <= x"0C68"&"00";
+    b_r1 <= x"20F0" & "00";
+    b_g1 <= x"4029" & "00";
+    b_b1 <= x"0C68" & "00";
     
-    b_r2 <= x"ED2E"&"00" when i_pair_start = '1' else x"3809"&"00";
-    b_g2 <= x"DAC9"&"00" when i_pair_start = '1' else x"D0F3"&"00";
-    b_b2 <= x"3809"&"00" when i_pair_start = '1' else x"F704"&"00";
+    b_r2 <= x"ED2E" & "00" when i_pair_start = '1' else x"3809" & "00";
+    b_g2 <= x"DAC9" & "00" when i_pair_start = '1' else x"D0F3" & "00";
+    b_b2 <= x"3809" & "00" when i_pair_start = '1' else x"F704" & "00";
 
     clk_proc : process(i_clk)
     begin
         if rising_edge(i_clk) then
-            
             o_de    <= de_delay(de_delay'high);
             o_hsync <= hs_delay(hs_delay'high);
             o_vsync <= vs_delay(vs_delay'high);
             
             de_delay  <= de_delay(de_delay'high-1 downto 0) & i_de;
-            hs_delay  <= hs_delay(de_delay'high-1 downto 0) & i_hsync;
-            vs_delay  <= vs_delay(de_delay'high-1 downto 0) & i_vsync;
+            hs_delay  <= hs_delay(hs_delay'high-1 downto 0) & i_hsync;
+            vs_delay  <= vs_delay(vs_delay'high-1 downto 0) & i_vsync;
             
             o_y <= p_b1(40 downto 33);
             o_c <= p_b2(40 downto 33);
-            
         end if;
     end process;
     
@@ -134,7 +132,7 @@ begin
         BCOUT        => open,           -- 18-bit output: B port cascade output
         CARRYCASCOUT => open,           -- 1-bit output: Cascade carry output
         MULTSIGNOUT  => open,           -- 1-bit output: Multiplier sign cascade output
-        PCOUT        => PC_r1,          -- 48-bit output: Cascade output
+        PCOUT        => pc_r1,          -- 48-bit output: Cascade output
         -- Control: 1-bit (each) output: Control Inputs/Status Bits
         OVERFLOW       => open,         -- 1-bit output: Overflow in add/acc output
         PATTERNBDETECT => open,         -- 1-bit output: Pattern bar detect output
@@ -224,7 +222,7 @@ begin
         BCOUT        => open,           -- 18-bit output: B port cascade output
         CARRYCASCOUT => open,           -- 1-bit output: Cascade carry output
         MULTSIGNOUT  => open,           -- 1-bit output: Multiplier sign cascade output
-        PCOUT        => PC_g1,          -- 48-bit output: Cascade output
+        PCOUT        => pc_g1,          -- 48-bit output: Cascade output
         -- Control: 1-bit (each) output: Control Inputs/Status Bits
         OVERFLOW       => open,         -- 1-bit output: Overflow in add/acc output
         PATTERNBDETECT => open,         -- 1-bit output: Pattern bar detect output
@@ -322,7 +320,7 @@ begin
         UNDERFLOW      => open,         -- 1-bit output: Underflow in add/acc output
         -- Data: 4-bit (each) output: Data Ports
         CARRYOUT       => open,         -- 4-bit output: Carry output
-        P              => P_b1,         -- 48-bit output: Primary data output
+        P              => p_b1,         -- 48-bit output: Primary data output
         -- Cascade: 30-bit (each) input: Cascade Ports
         ACIN        => (others => '0'), -- 30-bit input: A cascade data input
         BCIN        => (others => '0'), -- 18-bit input: B cascade input
@@ -405,7 +403,7 @@ begin
         BCOUT        => open,           -- 18-bit output: B port cascade output
         CARRYCASCOUT => open,           -- 1-bit output: Cascade carry output
         MULTSIGNOUT  => open,           -- 1-bit output: Multiplier sign cascade output
-        PCOUT        => PC_r2,          -- 48-bit output: Cascade output
+        PCOUT        => pc_r2,          -- 48-bit output: Cascade output
         -- Control: 1-bit (each) output: Control Inputs/Status Bits
         OVERFLOW       => open,         -- 1-bit output: Overflow in add/acc output
         PATTERNBDETECT => open,         -- 1-bit output: Pattern bar detect output
@@ -495,7 +493,7 @@ begin
         BCOUT        => open,           -- 18-bit output: B port cascade output
         CARRYCASCOUT => open,           -- 1-bit output: Cascade carry output
         MULTSIGNOUT  => open,           -- 1-bit output: Multiplier sign cascade output
-        PCOUT        => PC_g2,          -- 48-bit output: Cascade output
+        PCOUT        => pc_g2,          -- 48-bit output: Cascade output
         -- Control: 1-bit (each) output: Control Inputs/Status Bits
         OVERFLOW       => open,         -- 1-bit output: Overflow in add/acc output
         PATTERNBDETECT => open,         -- 1-bit output: Pattern bar detect output
@@ -593,7 +591,7 @@ begin
         UNDERFLOW      => open,         -- 1-bit output: Underflow in add/acc output
         -- Data: 4-bit (each) output: Data Ports
         CARRYOUT       => open,         -- 4-bit output: Carry output
-        P              => P_b2,         -- 48-bit output: Primary data output
+        P              => p_b2,         -- 48-bit output: Primary data output
         -- Cascade: 30-bit (each) input: Cascade Ports
         ACIN        => (others => '0'), -- 30-bit input: A cascade data input
         BCIN        => (others => '0'), -- 18-bit input: B cascade input

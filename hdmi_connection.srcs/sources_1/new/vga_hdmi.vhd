@@ -18,40 +18,51 @@ library work;
 entity vga_hdmi is
     port (
         GCLK : in STD_LOGIC;
-        SW   : in STD_LOGIC_VECTOR(0 downto 0);
+        SW   : in STD_LOGIC_VECTOR(2 downto 0);
         BTNC : in STD_LOGIC;
         
---        LD         : out STD_LOGIC_VECTOR(7 downto 0);
         HDMI_CLK   : out STD_LOGIC;
         HDMI_D     : out STD_LOGIC_VECTOR(15 downto 0);
         HDMI_DE    : out STD_LOGIC;
         HDMI_HSYNC : out STD_LOGIC;
         HDMI_VSYNC : out STD_LOGIC;
         HDMI_SCL   : out STD_LOGIC;
-        HDMI_SDA   : inout STD_LOGIC
+        HDMI_SDA   : out STD_LOGIC
     );
 end vga_hdmi;
 
 
 architecture Behavioral of vga_hdmi is
     
-    component HEENSim
+    component stabilize_inputs
         generic (
-            G_DATA_SIZE : INTEGER := 10;
-            G_PERIOD    : INTEGER := 125_000  -- 1 ms
+            G_NB_INPUTS : INTEGER
         );
         port (
-            i_wr_clk        : in STD_LOGIC;
-            i_rd_clk        : in STD_LOGIC;
+            i_clk : in STD_LOGIC;
+            i_in  : in STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0);
+            
+            o_out : out STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0)
+        );
+    end component;
+    
+    component HEENSim
+        generic (
+            G_DATA_SIZE : INTEGER;
+            G_PERIOD    : INTEGER
+        );
+        port (
+            i_clk           : in STD_LOGIC;
             i_rst           : in STD_LOGIC;
             i_freeze_screen : in STD_LOGIC;
             i_rd_en         : in STD_LOGIC;
             
-            o_dout    : out STD_LOGIC_VECTOR(17 downto 0);
-            o_empty   : out STD_LOGIC;
-            o_valid   : out STD_LOGIC;
-            o_ph_exec : out STD_LOGIC;
-            o_ph_dist : out STD_LOGIC
+            o_dout       : out STD_LOGIC_VECTOR(17 downto 0);
+            o_empty      : out STD_LOGIC;
+            o_valid      : out STD_LOGIC;
+            o_data_count : out STD_LOGIC_VECTOR(9 downto 0);
+            o_ph_exec    : out STD_LOGIC;
+            o_ph_dist    : out STD_LOGIC
         );
     end component;
     
@@ -70,8 +81,7 @@ architecture Behavioral of vga_hdmi is
             o_mem_wr_en   : out STD_LOGIC;
             o_mem_wr_we   : out STD_LOGIC;
             o_mem_wr_addr : out STD_LOGIC_VECTOR(9 downto 0);
-            o_mem_wr_din  : out STD_LOGIC_VECTOR(C_MAX_ID downto 0);
-            o_current_ts  : out STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0)
+            o_mem_wr_din  : out STD_LOGIC_VECTOR(C_MAX_ID downto 0)
         );
     end component;
     
@@ -93,15 +103,28 @@ architecture Behavioral of vga_hdmi is
         );
     end component;
     
+    component get_current_timestamp
+        port ( 
+            i_clk           : in STD_LOGIC;
+            i_rst           : in STD_LOGIC;
+            i_freeze_screen : in STD_LOGIC;
+            i_ph_dist       : in STD_LOGIC;
+            
+            o_current_ts : out STD_LOGIC_VECTOR (C_LENGTH_TIMESTAMP-1 downto 0)
+        );
+    end component;
+    
     component raster_plot
         port (
-            i_clk         : in STD_LOGIC;
-            i_rst         : in STD_LOGIC;
-            i_hcounter    : in STD_LOGIC_VECTOR(11 downto 0);
-            i_vcounter    : in STD_LOGIC_VECTOR(11 downto 0);
-            i_mem_rd_data : in STD_LOGIC_VECTOR(C_MAX_ID downto 0);
-            i_current_ts  : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
---            i_sw          : in STD_LOGIC;
+            i_clk           : in STD_LOGIC;
+            i_rst           : in STD_LOGIC;
+            i_freeze_screen : in STD_LOGIC;
+            i_hcounter      : in STD_LOGIC_VECTOR(11 downto 0);
+            i_vcounter      : in STD_LOGIC_VECTOR(11 downto 0);
+            i_mem_rd_data   : in STD_LOGIC_VECTOR(C_MAX_ID downto 0);
+            i_current_ts    : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
+            i_extend_vaxis  : in STD_LOGIC;
+            i_bigger_dots   : in STD_LOGIC;
             
             o_mem_rd_en   : out STD_LOGIC;
             o_mem_rd_addr : out STD_LOGIC_VECTOR(9 downto 0);
@@ -124,7 +147,7 @@ architecture Behavioral of vga_hdmi is
             o_hdmi_hsync : out STD_LOGIC;
             o_hdmi_vsync : out STD_LOGIC;
             o_hdmi_scl   : out STD_LOGIC;
-            io_hdmi_sda  : inout STD_LOGIC
+            o_hdmi_sda   : out STD_LOGIC
         );
     end component;
     
@@ -145,7 +168,16 @@ architecture Behavioral of vga_hdmi is
     signal clk_150_90 : STD_LOGIC;
     signal current_ts : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
     
-    -- State variables
+    -- Stabilized inputs
+    signal rst               : STD_LOGIC;
+    signal freeze_screen     : STD_LOGIC;
+    
+    signal rst_150           : STD_LOGIC;
+    signal freeze_screen_150 : STD_LOGIC;
+    signal extend_vaxis_150  : STD_LOGIC;
+    signal bigger_dots_150   : STD_LOGIC;
+    
+    -- State signals
     signal ph_dist : STD_LOGIC;
     
     -- Signals from the FIFO
@@ -172,30 +204,60 @@ architecture Behavioral of vga_hdmi is
 
 begin
     
+    i_stabilize_inputs : stabilize_inputs
+    generic map (
+        G_NB_INPUTS => 2
+    )
+    port map (
+        i_clk   => clk,
+        i_in(0) => BTNC,
+        i_in(1) => SW(0),
+        
+        o_out(0) => rst,
+        o_out(1) => freeze_screen
+    );
+    
+    i_stabilize_inputs_150 : stabilize_inputs
+    generic map (
+        G_NB_INPUTS => 4
+    )
+    port map (
+        i_clk   => clk_150,
+        i_in(0) => BTNC,
+        i_in(1) => SW(0),
+        i_in(2) => SW(1),
+        i_in(3) => SW(2),
+        
+        o_out(0) => rst_150,
+        o_out(1) => freeze_screen_150,
+        o_out(2) => extend_vaxis_150,
+        o_out(3) => bigger_dots_150
+    );
+    
     i_HEENSim : HEENSim
     generic map (
-        G_DATA_SIZE => 2,
+        G_DATA_SIZE => 1,
         G_PERIOD    => 125_000  -- Tspike = 1 ms
     )
     port map (
-        i_wr_clk        => clk,
-        i_rd_clk        => clk_150,
-        i_rst           => BTNC,
-        i_freeze_screen => SW(0),
+        i_clk           => clk,
+        i_rst           => rst,
+        i_freeze_screen => freeze_screen,
         i_rd_en         => fifo_rd_en,
         
-        o_dout    => fifo_dout,
-        o_empty   => fifo_empty,
-        o_valid   => fifo_valid,
-        o_ph_exec => open,
-        o_ph_dist => ph_dist
+        o_dout       => fifo_dout,
+        o_empty      => fifo_empty,
+        o_valid      => fifo_valid,
+        o_data_count => open,
+        o_ph_exec    => open,
+        o_ph_dist    => ph_dist
     );
     
     i_read_fifo_spikes : read_fifo_spikes
     port map (
-        i_clk           => clk_150,
-        i_rst           => BTNC,
-        i_freeze_screen => SW(0),
+        i_clk           => clk,
+        i_rst           => rst,
+        i_freeze_screen => freeze_screen,
         i_ph_dist       => ph_dist,
         i_empty         => fifo_empty,
         i_valid         => fifo_valid,
@@ -206,13 +268,12 @@ begin
         o_mem_wr_en   => mem_wr_en,
         o_mem_wr_we   => mem_wr_we,
         o_mem_wr_addr => mem_wr_addr,
-        o_mem_wr_din  => mem_wr_din,
-        o_current_ts  => current_ts
+        o_mem_wr_din  => mem_wr_din
     );
     
     i_blk_mem_gen_1 : blk_mem_gen_1
     port map (
-        clka   => clk_150,
+        clka   => clk,
         ena    => mem_wr_en,
         wea(0) => mem_wr_we,
         addra  => mem_wr_addr,
@@ -227,15 +288,27 @@ begin
         doutb  => mem_rd_data
     );
     
+    i_get_current_timestamp : get_current_timestamp
+    port map ( 
+        i_clk           => clk_150,
+        i_rst           => rst_150,
+        i_freeze_screen => freeze_screen_150,
+        i_ph_dist       => ph_dist,
+        
+        o_current_ts => current_ts
+    );
+    
     i_raster_plot : raster_plot
     port map (
-        i_clk         => clk_150,
-        i_rst           => BTNC,
-        i_hcounter    => plot_hcounter,
-        i_vcounter    => plot_vcounter,
-        i_mem_rd_data => mem_rd_data,
-        i_current_ts  => current_ts,
---        i_sw          => SW(1),
+        i_clk           => clk_150,
+        i_rst           => rst_150,
+        i_freeze_screen => freeze_screen_150,
+        i_hcounter      => plot_hcounter,
+        i_vcounter      => plot_vcounter,
+        i_mem_rd_data   => mem_rd_data,
+        i_current_ts    => current_ts,
+        i_extend_vaxis  => extend_vaxis_150,
+        i_bigger_dots   => bigger_dots_150,
         
         o_mem_rd_en   => mem_rd_en,
         o_mem_rd_addr => mem_rd_addr,
@@ -257,7 +330,7 @@ begin
         o_hdmi_hsync => HDMI_HSYNC,
         o_hdmi_vsync => HDMI_VSYNC,
         o_hdmi_scl   => HDMI_SCL,
-        io_hdmi_sda  => HDMI_SDA
+        o_hdmi_sda   => HDMI_SDA
     );
     
     i_clk_wiz : clk_wiz_0

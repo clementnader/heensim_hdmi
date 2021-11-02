@@ -31,7 +31,7 @@ entity hdmi_ddr_output is
         o_hdmi_hsync : out STD_LOGIC;
         o_hdmi_vsync : out STD_LOGIC;
         o_hdmi_scl   : out STD_LOGIC;
-        io_hdmi_sda  : inout STD_LOGIC
+        o_hdmi_sda   : out STD_LOGIC
     );
 end hdmi_ddr_output;
 
@@ -40,15 +40,15 @@ architecture Behavioral of hdmi_ddr_output is
 
     component i2c_sender
         port (
-            i_clk    : in STD_LOGIC;
-            i_resend : in STD_LOGIC;
+            i_clk : in STD_LOGIC;
             
-            o_sioc  : out STD_LOGIC;
-            io_siod : inout STD_LOGIC
+            o_sioc : out STD_LOGIC;
+            o_siod : out STD_LOGIC
         );
     end component;
     
 begin
+    
     clk_proc: process(i_clk)
     begin
         if rising_edge(i_clk) then
@@ -56,8 +56,8 @@ begin
             o_hdmi_hsync <= i_hsync;
         end if;
     end process;
-
-    ODDR_hdmi_clk : ODDR 
+    
+    ODDR_hdmi_clk : ODDR
     generic map (
         DDR_CLK_EDGE => "SAME_EDGE",
         INIT         => '0',
@@ -72,8 +72,8 @@ begin
         R  => '0',
         S  => '0'
     );
-
-    ODDR_hdmi_de : ODDR 
+    
+    ODDR_hdmi_de : ODDR
     generic map (
         DDR_CLK_EDGE => "SAME_EDGE",
         INIT         => '0',
@@ -88,10 +88,10 @@ begin
         R  => '0',
         S  => '0'
     );
-
+    
     ddr_gen: for i in 0 to 7 generate
     begin
-        ODDR_hdmi_d : ODDR 
+        ODDR_hdmi_d : ODDR
         generic map (
             DDR_CLK_EDGE => "SAME_EDGE",
             INIT         => '0',
@@ -109,17 +109,16 @@ begin
     end generate;
     
     o_hdmi_d(7 downto 0) <= "00000000";
-
------------------------------------------------------------------------   
--- This sends the configuration register values to the HDMI transmitter
------------------------------------------------------------------------   
+    
+    -----------------------------------------------------------------------   
+    -- This sends the configuration register values to the HDMI transmitter
+    -----------------------------------------------------------------------   
     i_i2c_sender: i2c_sender
     port map (
-        i_clk    => i_clk,
-        i_resend => '0',
+        i_clk => i_clk,
         
-        o_sioc  => o_hdmi_scl,
-        io_siod => io_hdmi_sda
+        o_sioc => o_hdmi_scl,
+        o_siod => o_hdmi_sda
     );
+    
 end Behavioral;
-

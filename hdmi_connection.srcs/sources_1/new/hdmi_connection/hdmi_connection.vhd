@@ -39,9 +39,10 @@ entity hdmi_connection is
         o_hdmi_hsync : out STD_LOGIC;
         o_hdmi_vsync : out STD_LOGIC;
         o_hdmi_scl   : out STD_LOGIC;
-        io_hdmi_sda  : inout STD_LOGIC
+        o_hdmi_sda   : out STD_LOGIC
     );
 end hdmi_connection;
+
 
 architecture Behavioral of hdmi_connection is
     
@@ -97,7 +98,7 @@ architecture Behavioral of hdmi_connection is
             i_de         : in STD_LOGIC;
             i_hsync      : in STD_LOGIC;
             i_vsync      : in STD_LOGIC;
-      
+            
             o_y     : out STD_LOGIC_VECTOR(7 downto 0);
             o_c     : out STD_LOGIC_VECTOR(7 downto 0);
             o_de    : out STD_LOGIC;
@@ -122,7 +123,7 @@ architecture Behavioral of hdmi_connection is
             o_hdmi_hsync : out STD_LOGIC;
             o_hdmi_vsync : out STD_LOGIC;
             o_hdmi_scl   : out STD_LOGIC;
-            io_hdmi_sda  : inout STD_LOGIC
+            o_hdmi_sda   : out STD_LOGIC
         );
     end component;
     
@@ -152,7 +153,7 @@ architecture Behavioral of hdmi_connection is
     signal csc_de    : STD_LOGIC;
     signal csc_hsync : STD_LOGIC;
     signal csc_vsync : STD_LOGIC;
-
+    
 begin
     
     i_vga_generator: vga_generator
@@ -229,7 +230,7 @@ begin
         o_hdmi_hsync => o_hdmi_hsync,
         o_hdmi_vsync => o_hdmi_vsync,
         o_hdmi_scl   => o_hdmi_scl,
-        io_hdmi_sda  => io_hdmi_sda
+        o_hdmi_sda   => o_hdmi_sda
     );
     
 end Behavioral;

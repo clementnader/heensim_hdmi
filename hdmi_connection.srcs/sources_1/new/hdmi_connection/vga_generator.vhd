@@ -13,7 +13,6 @@ library IEEE;
 
 library work;
     use work.hdmi_resolution.ALL;
-    use work.events_list.ALL;
 
 
 entity vga_generator is
@@ -56,13 +55,13 @@ begin
             end if;
                 
             -- Generate the sync Pulses
-            if    hcounter = C_H_START_SYNC then 
+            if hcounter = C_H_START_SYNC then 
                 o_hsync <= C_H_SYNC_ACTIVE;
             elsif hcounter = C_H_END_SYNC then
                 o_hsync <= not(C_H_SYNC_ACTIVE);
             end if;
             
-            if    vcounter = C_V_START_SYNC then 
+            if vcounter = C_V_START_SYNC then 
                 o_vsync <= C_V_SYNC_ACTIVE;
             elsif vcounter = C_V_END_SYNC then
                 o_vsync <= not(C_V_SYNC_ACTIVE);

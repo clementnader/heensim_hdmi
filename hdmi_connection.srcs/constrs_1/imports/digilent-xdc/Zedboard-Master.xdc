@@ -106,7 +106,6 @@ set_property PACKAGE_PIN W17  [get_ports {HDMI_VSYNC}];  # "HD-VSYNC"
 
 set_property PACKAGE_PIN AA18 [get_ports {HDMI_SCL}];    # "HD-SCL"
 set_property PACKAGE_PIN Y16  [get_ports {HDMI_SDA}];    # "HD-SDA"
-set_property PULLUP      true [get_ports {HDMI_SDA}];
 
 #set_property PACKAGE_PIN W16  [get_ports {HDMI_INT}];     # "HD-INT"
 #set_property PACKAGE_PIN U15  [get_ports {HDMI_SPDIF}];   # "HD-SPDIF"
@@ -116,8 +115,8 @@ set_property PULLUP      true [get_ports {HDMI_SDA}];
 ## User DIP Switches - Bank 35
 ## ---------------------------------------------------------------------------- 
 set_property PACKAGE_PIN F22 [get_ports {SW[0]}];  # "SW0"
-#set_property PACKAGE_PIN G22 [get_ports {SW[1]}];  # "SW1"
-#set_property PACKAGE_PIN H22 [get_ports {SW[2]}];  # "SW2"
+set_property PACKAGE_PIN G22 [get_ports {SW[1]}];  # "SW1"
+set_property PACKAGE_PIN H22 [get_ports {SW[2]}];  # "SW2"
 #set_property PACKAGE_PIN F21 [get_ports {SW[3]}];  # "SW3"
 #set_property PACKAGE_PIN H19 [get_ports {SW[4]}];  # "SW4"
 #set_property PACKAGE_PIN H18 [get_ports {SW[5]}];  # "SW5"

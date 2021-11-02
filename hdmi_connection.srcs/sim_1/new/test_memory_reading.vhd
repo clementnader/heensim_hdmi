@@ -21,6 +21,7 @@
 library IEEE;
     use IEEE.STD_LOGIC_1164.ALL;
     use IEEE.STD_LOGIC_UNSIGNED.ALL;
+    use IEEE.NUMERIC_STD.ALL;
 
 library work;
     use work.hdmi_resolution.ALL;
@@ -53,13 +54,16 @@ architecture Behavioral of test_memory_reading is
     
     -- Clocking
     signal clk_150    : STD_LOGIC := '1';
-    signal current_ts : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0) := (others => '0');
+    signal current_ts : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0) := std_logic_vector(to_unsigned(200, C_LENGTH_TIMESTAMP));
+    
+    -- Inputs
+    signal extend_vaxis_150 : STD_LOGIC := '0';
+    signal bigger_dots_150  : STD_LOGIC := '0';
     
     -- Signals from the memory block
     signal mem_rd_en   : STD_LOGIC;
     signal mem_rd_addr : STD_LOGIC_VECTOR(9 downto 0);
     signal mem_rd_data : STD_LOGIC_VECTOR(C_MAX_ID downto 0);
-    signal mem_rd      : STD_LOGIC_VECTOR(9 downto 0);
     
     -- Signals from the plot generator
     signal plot_hcounter : STD_LOGIC_VECTOR(11 downto 0) := (others => '0');
@@ -67,7 +71,6 @@ architecture Behavioral of test_memory_reading is
     signal plot_color    : STD_LOGIC_VECTOR(23 downto 0);
     
 begin
-    mem_rd <= mem_rd_data(9 downto 0);
     
     i_blk_mem_gen_1 : blk_mem_gen_1
     port map (
@@ -88,19 +91,24 @@ begin
     
     -- Generate the clock
     clk_150 <= not clk_150 after 3.33 ns;  -- 150 MHz
-    current_ts <= current_ts + 1 after 1 ms;
+--    current_ts <= current_ts + 1 after 1 ms;
     
     test_read_fifo_spikes : entity work.raster_plot
     port map (
-        i_clk         => clk_150,
-        i_hcounter    => plot_hcounter,
-        i_vcounter    => plot_vcounter,
-        i_mem_rd_data => mem_rd_data,
-        i_current_ts  => current_ts,
+        i_clk           => clk_150,
+        i_rst           => '0',
+        i_freeze_screen => '0',
+        i_hcounter      => plot_hcounter,
+        i_vcounter      => plot_vcounter,
+        i_mem_rd_data   => mem_rd_data,
+        i_current_ts    => current_ts,
+        i_extend_vaxis  => extend_vaxis_150,
+        i_bigger_dots   => bigger_dots_150,
         
         o_mem_rd_en   => mem_rd_en,
         o_mem_rd_addr => mem_rd_addr,
-        o_color       => plot_color
+        o_color       => plot_color,
+        o_end_screen  => open
     );
     
     -- Advance the position counters
@@ -126,21 +134,13 @@ begin
     -- Testbench sequence
     process is
     begin
-        wait for 0.1 us;
+        wait for 1_000 ms;
+        extend_vaxis_150 <= '1';
         
-        wait for 0.2 us;
+        wait for 2_000 ms;
+        extend_vaxis_150 <= '0';
         
-        wait for 0.3 us;
-        
-        wait for 0.4 us;
-        
-        wait for 0.4 us;
-        
-        wait for 0.1 us;
-        
-        wait for 0.2 us;
-        
-        wait for 1 ms;
+        wait for 2_000 ms;
         
     end process;
     
