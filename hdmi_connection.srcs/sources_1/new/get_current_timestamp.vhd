@@ -40,10 +40,8 @@ end get_current_timestamp;
 
 architecture Behavioral of get_current_timestamp is
     
-    signal current_ts         : STD_LOGIC_VECTOR (C_LENGTH_TIMESTAMP-1 downto 0);
-    signal ph_dist1           : STD_LOGIC;
-    signal ph_dist2           : STD_LOGIC;
-    signal ph_dist3           : STD_LOGIC;
+    signal current_ts         : STD_LOGIC_VECTOR (C_LENGTH_TIMESTAMP-1 downto 0) := (others => '0');
+    signal last_ph_dist       : STD_LOGIC;
     signal last_freeze_screen : STD_LOGIC;
     
 begin
@@ -52,9 +50,7 @@ begin
     begin
         if rising_edge(i_clk) then
             
-            ph_dist1 <= i_ph_dist;
-            ph_dist2 <= ph_dist1;
-            ph_dist3 <= ph_dist2;
+            last_ph_dist       <= i_ph_dist;
             last_freeze_screen <= i_freeze_screen;
             
             if i_rst = '1' then
@@ -64,7 +60,7 @@ begin
                     if i_freeze_screen = '0' then  -- falling edge
                         current_ts <= (others => '0');  -- reset time
                     end if;
-                elsif ph_dist3 = '1' and ph_dist2 = '0' then  -- falling edge
+                elsif last_ph_dist = '1' and i_ph_dist = '0' then  -- falling edge
                     current_ts <= current_ts + 1;
                 end if;
             end if;

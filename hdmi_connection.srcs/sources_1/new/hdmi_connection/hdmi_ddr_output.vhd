@@ -37,7 +37,7 @@ end hdmi_ddr_output;
 
 
 architecture Behavioral of hdmi_ddr_output is
-
+    
     component i2c_sender
         port (
             i_clk : in STD_LOGIC;
@@ -49,7 +49,7 @@ architecture Behavioral of hdmi_ddr_output is
     
 begin
     
-    clk_proc: process(i_clk)
+    clk_proc : process(i_clk)
     begin
         if rising_edge(i_clk) then
             o_hdmi_vsync <= i_vsync;
@@ -57,7 +57,7 @@ begin
         end if;
     end process;
     
-    ODDR_hdmi_clk : ODDR
+    ODDR_inst_hdmi_clk : ODDR
     generic map (
         DDR_CLK_EDGE => "SAME_EDGE",
         INIT         => '0',
@@ -73,7 +73,7 @@ begin
         S  => '0'
     );
     
-    ODDR_hdmi_de : ODDR
+    ODDR_inst_hdmi_de : ODDR
     generic map (
         DDR_CLK_EDGE => "SAME_EDGE",
         INIT         => '0',
@@ -89,9 +89,9 @@ begin
         S  => '0'
     );
     
-    ddr_gen: for i in 0 to 7 generate
+    ODDR_gen_hdmi_d : for i in 0 to 7 generate
     begin
-        ODDR_hdmi_d : ODDR
+        ODDR_inst_hdmi_d : ODDR
         generic map (
             DDR_CLK_EDGE => "SAME_EDGE",
             INIT         => '0',
@@ -113,7 +113,7 @@ begin
     -----------------------------------------------------------------------   
     -- This sends the configuration register values to the HDMI transmitter
     -----------------------------------------------------------------------   
-    i_i2c_sender: i2c_sender
+    i2c_sender_inst : i2c_sender
     port map (
         i_clk => i_clk,
         

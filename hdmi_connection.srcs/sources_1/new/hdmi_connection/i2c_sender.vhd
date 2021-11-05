@@ -58,7 +58,7 @@ architecture Behavioral of i2c_sender is
         x"4810", -- left justified data (D23 downto 8)
         -- according to documenation, style 2 should be x"1637" but it isn't. ARGH!
         x"1637", -- 444 output, 8 bit style 2, 1st half on rising edge - YCrCb clipping
-        x"1700", -- output asp ect ratio 16:9, external DE 
+        x"1700", -- output aspect ratio 16:9, external DE 
         x"D03C", -- auto sync data - must be set for DDR modes. No DDR clock delay
         ---------------
         -- Output mode
@@ -95,23 +95,23 @@ begin
     
     i2c_tristate: process(data_sr, tristate_sr)
     begin
-        if tristate_sr(tristate_sr'length-1) = '0' then
-            o_siod <= data_sr(data_sr'length-1);
+        if tristate_sr(tristate_sr'high) = '0' then
+            o_siod <= data_sr(data_sr'high);
         else
             o_siod <= 'Z';
         end if;
     end process;
     
-    with divider(divider'length-1 downto divider'length-2)
-        select o_sioc <= clk_first_quarter(clk_first_quarter'length-1) when "00",
-                         clk_last_quarter(clk_last_quarter'length-1)   when "11",
+    with divider(divider'high downto divider'high-1)
+        select o_sioc <= clk_first_quarter(clk_first_quarter'high) when "00",
+                         clk_last_quarter(clk_last_quarter'high)   when "11",
                          '1' when others;
     
     i2c_send: process(i_clk)
     begin
         if rising_edge(i_clk) then
-            if busy_sr(busy_sr'length-1) = '0' then
-                if initial_pause(initial_pause'length-1) = '0' then
+            if busy_sr(busy_sr'high) = '0' then
+                if initial_pause(initial_pause'high) = '0' then
                     initial_pause <= initial_pause + 1;
                 elsif finished = '0' then
                     if divider = "111111111" then
@@ -120,25 +120,25 @@ begin
                             finished <= '1';
                         else
                             -- move the new data into the shift registers
-                            clk_first_quarter <= (clk_first_quarter'length-1 => '1', others => '0');
+                            clk_first_quarter <= (clk_first_quarter'high => '1', others => '0');
                             clk_last_quarter  <= (0 => '1', others => '0');
-                            --            Start     Address      Ack         Register           Ack           Value            Ack   Stop
-                            tristate_sr <= "0" & "00000000"    & "1" & "00000000"             & "1" & "00000000"             & "1"  & "0";
-                            data_sr     <= "0" & C_I2C_WR_ADDR & "1" & reg_value(15 downto 8) & "1" & reg_value( 7 downto 0) & "1"  & "0";
+                            --            Start     Address      Ack         Register           Ack           Value           Ack   Stop
+                            tristate_sr <= "0" & "00000000"    & "1" & "00000000"             & "1" & "00000000"            & "1"  & "0";
+                            data_sr     <= "0" & C_I2C_WR_ADDR & "1" & reg_value(15 downto 8) & "1" & reg_value(7 downto 0) & "1"  & "0";
                             busy_sr     <= (others => '1');
                             address     <= address + 1;
                         end if;
                     else
-                        divider <= divider+1; 
+                        divider <= divider + 1; 
                     end if;
                 end if;
             else
                 if divider = "111111111" then   -- divide i_clk by 128 for I2C
-                    tristate_sr       <= tristate_sr(tristate_sr'length-2 downto 0) & '0';
-                    busy_sr           <= busy_sr(busy_sr'length-2 downto 0) & '0';
-                    data_sr           <= data_sr(data_sr'length-2 downto 0) & '1';
-                    clk_first_quarter <= clk_first_quarter(clk_first_quarter'length-2 downto 0) & '1';
-                    clk_last_quarter  <= clk_last_quarter(clk_last_quarter'length-2   downto 0) & '1';
+                    tristate_sr       <= tristate_sr(tristate_sr'high-1 downto 0) & '0';
+                    busy_sr           <= busy_sr(busy_sr'high-1 downto 0) & '0';
+                    data_sr           <= data_sr(data_sr'high-1 downto 0) & '1';
+                    clk_first_quarter <= clk_first_quarter(clk_first_quarter'high-1 downto 0) & '1';
+                    clk_last_quarter  <= clk_last_quarter(clk_last_quarter'high-1   downto 0) & '1';
                     divider           <= (others => '0');
                 else
                     divider <= divider + 1;

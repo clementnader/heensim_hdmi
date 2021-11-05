@@ -1,10 +1,21 @@
 ----------------------------------------------------------------------------------
--- Engineer:    Mike Field <hamster@snap.net.nz> 
--- Module Name: vga_hdmi - Behavioral 
+-- Company: 
+-- Engineer: 
 -- 
--- Description: A test of the Zedboard's VGA & HDMI interface
+-- Create Date: 10/15/2021 07:44:26 PM
+-- Design Name: 
+-- Module Name: vga_hdmi - Behavioral 
+-- Project Name: 
+-- Target Devices: 
+-- Tool Versions: 
+-- Description: 
+-- 
+-- Dependencies: 
+-- 
+-- Revision:
+-- Revision 0.01 - File Created
+-- Additional Comments:
 --
--- Feel free to use this how you see fit, and fix any errors you find :-)
 ----------------------------------------------------------------------------------
 
 library IEEE;
@@ -18,7 +29,7 @@ library work;
 entity vga_hdmi is
     port (
         GCLK : in STD_LOGIC;
-        SW   : in STD_LOGIC_VECTOR(2 downto 0);
+        SW   : in STD_LOGIC_VECTOR(1 downto 0);
         BTNC : in STD_LOGIC;
         
         HDMI_CLK   : out STD_LOGIC;
@@ -43,6 +54,19 @@ architecture Behavioral of vga_hdmi is
             i_in  : in STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0);
             
             o_out : out STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0)
+        );
+    end component;
+    
+    component synchronize_bits
+        generic (
+            G_NB_INPUTS : INTEGER
+        );
+        port (
+            i_src_clk  : in STD_LOGIC;
+            i_src      : in STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0);
+            
+            i_dest_clk : in STD_LOGIC;
+            o_dest     : out STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0)
         );
     end component;
     
@@ -124,7 +148,6 @@ architecture Behavioral of vga_hdmi is
             i_mem_rd_data   : in STD_LOGIC_VECTOR(C_MAX_ID downto 0);
             i_current_ts    : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
             i_extend_vaxis  : in STD_LOGIC;
-            i_bigger_dots   : in STD_LOGIC;
             
             o_mem_rd_en   : out STD_LOGIC;
             o_mem_rd_addr : out STD_LOGIC_VECTOR(9 downto 0);
@@ -175,10 +198,10 @@ architecture Behavioral of vga_hdmi is
     signal rst_150           : STD_LOGIC;
     signal freeze_screen_150 : STD_LOGIC;
     signal extend_vaxis_150  : STD_LOGIC;
-    signal bigger_dots_150   : STD_LOGIC;
     
     -- State signals
-    signal ph_dist : STD_LOGIC;
+    signal ph_dist     : STD_LOGIC;
+    signal ph_dist_150 : STD_LOGIC;
     
     -- Signals from the FIFO
     signal fifo_dout  : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
@@ -197,44 +220,58 @@ architecture Behavioral of vga_hdmi is
     signal mem_rd_data : STD_LOGIC_VECTOR(C_MAX_ID downto 0);
     
     -- Signals from the plot generator
-    signal plot_hcounter   : STD_LOGIC_VECTOR(11 downto 0);
-    signal plot_vcounter   : STD_LOGIC_VECTOR(11 downto 0);
-    signal plot_color      : STD_LOGIC_VECTOR(23 downto 0);
-    signal plot_end_screen : STD_LOGIC;
-
+    signal plot_hcounter       : STD_LOGIC_VECTOR(11 downto 0);
+    signal plot_vcounter       : STD_LOGIC_VECTOR(11 downto 0);
+    signal plot_color          : STD_LOGIC_VECTOR(23 downto 0);
+    signal plot_end_screen     : STD_LOGIC;
+    signal plot_end_screen_150 : STD_LOGIC;
+    
 begin
     
-    i_stabilize_inputs : stabilize_inputs
+    stabilize_inputs_inst_150 : stabilize_inputs
     generic map (
-        G_NB_INPUTS => 2
-    )
-    port map (
-        i_clk   => clk,
-        i_in(0) => BTNC,
-        i_in(1) => SW(0),
-        
-        o_out(0) => rst,
-        o_out(1) => freeze_screen
-    );
-    
-    i_stabilize_inputs_150 : stabilize_inputs
-    generic map (
-        G_NB_INPUTS => 4
+        G_NB_INPUTS => 3
     )
     port map (
         i_clk   => clk_150,
         i_in(0) => BTNC,
         i_in(1) => SW(0),
         i_in(2) => SW(1),
-        i_in(3) => SW(2),
         
         o_out(0) => rst_150,
         o_out(1) => freeze_screen_150,
-        o_out(2) => extend_vaxis_150,
-        o_out(3) => bigger_dots_150
+        o_out(2) => extend_vaxis_150
     );
     
-    i_HEENSim : HEENSim
+    synchronize_bits_inst_150 : synchronize_bits
+    generic map (
+        G_NB_INPUTS => 1
+    )
+    port map (
+        i_src_clk  => clk,
+        i_src(0)   => ph_dist,
+        
+        i_dest_clk => clk_150,
+        o_dest(0)  => ph_dist_150
+    );
+    
+    synchronize_bits_inst : synchronize_bits
+    generic map (
+         G_NB_INPUTS => 3
+     )
+     port map (
+        i_src_clk  => clk_150,
+        i_src(0)   => rst_150,
+        i_src(1)   => freeze_screen_150,
+        i_src(2)   => plot_end_screen_150,
+        
+        i_dest_clk => clk,
+        o_dest(0)  => rst,
+        o_dest(1)  => freeze_screen,
+        o_dest(2)  => plot_end_screen
+    );
+    
+    HEENSim_inst : HEENSim
     generic map (
         G_DATA_SIZE => 1,
         G_PERIOD    => 125_000  -- Tspike = 1 ms
@@ -253,7 +290,7 @@ begin
         o_ph_dist    => ph_dist
     );
     
-    i_read_fifo_spikes : read_fifo_spikes
+    read_fifo_spikes_inst : read_fifo_spikes
     port map (
         i_clk           => clk,
         i_rst           => rst,
@@ -271,7 +308,7 @@ begin
         o_mem_wr_din  => mem_wr_din
     );
     
-    i_blk_mem_gen_1 : blk_mem_gen_1
+    blk_mem_gen_1_inst : blk_mem_gen_1
     port map (
         clka   => clk,
         ena    => mem_wr_en,
@@ -288,17 +325,17 @@ begin
         doutb  => mem_rd_data
     );
     
-    i_get_current_timestamp : get_current_timestamp
+    get_current_timestamp_inst : get_current_timestamp
     port map ( 
         i_clk           => clk_150,
         i_rst           => rst_150,
         i_freeze_screen => freeze_screen_150,
-        i_ph_dist       => ph_dist,
+        i_ph_dist       => ph_dist_150,
         
         o_current_ts => current_ts
     );
     
-    i_raster_plot : raster_plot
+    raster_plot_inst : raster_plot
     port map (
         i_clk           => clk_150,
         i_rst           => rst_150,
@@ -308,15 +345,14 @@ begin
         i_mem_rd_data   => mem_rd_data,
         i_current_ts    => current_ts,
         i_extend_vaxis  => extend_vaxis_150,
-        i_bigger_dots   => bigger_dots_150,
         
         o_mem_rd_en   => mem_rd_en,
         o_mem_rd_addr => mem_rd_addr,
         o_color       => plot_color,
-        o_end_screen  => plot_end_screen
+        o_end_screen  => plot_end_screen_150
     );
     
-    i_hdmi_connection : hdmi_connection
+    hdmi_connection_inst : hdmi_connection
     port map (
         i_clk   => clk_150,
         i_clk90 => clk_150_90,
@@ -333,7 +369,7 @@ begin
         o_hdmi_sda   => HDMI_SDA
     );
     
-    i_clk_wiz : clk_wiz_0
+    clk_wiz_0_inst : clk_wiz_0
     port map (
         clk_in1 => GCLK,  -- 100 MHz
         reset   => '0',

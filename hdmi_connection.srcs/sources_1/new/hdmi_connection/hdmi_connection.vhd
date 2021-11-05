@@ -46,19 +46,28 @@ end hdmi_connection;
 
 architecture Behavioral of hdmi_connection is
     
-    component vga_generator is
+    component position_counters
         port (
-            i_clk   : in STD_LOGIC;
-            i_color : in STD_LOGIC_VECTOR(23 downto 0);
+            i_clk : in STD_LOGIC;
             
             o_hcounter : out STD_LOGIC_VECTOR(11 downto 0);
-            o_vcounter : out STD_LOGIC_VECTOR(11 downto 0);
-            o_r        : out STD_LOGIC_VECTOR(7 downto 0);
-            o_g        : out STD_LOGIC_VECTOR(7 downto 0);
-            o_b        : out STD_LOGIC_VECTOR(7 downto 0);
-            o_de       : out STD_LOGIC;
-            o_hsync    : out STD_LOGIC := '0';
-            o_vsync    : out STD_LOGIC := '0'
+            o_vcounter : out STD_LOGIC_VECTOR(11 downto 0)
+        );
+    end component;
+    
+    component vga_generator is
+        port (
+            i_clk      : in STD_LOGIC;
+            i_color    : in STD_LOGIC_VECTOR(23 downto 0);
+            i_hcounter : in STD_LOGIC_VECTOR(11 downto 0);
+            i_vcounter : in STD_LOGIC_VECTOR(11 downto 0);
+            
+            o_r     : out STD_LOGIC_VECTOR(7 downto 0);
+            o_g     : out STD_LOGIC_VECTOR(7 downto 0);
+            o_b     : out STD_LOGIC_VECTOR(7 downto 0);
+            o_de    : out STD_LOGIC;
+            o_hsync : out STD_LOGIC := '0';
+            o_vsync : out STD_LOGIC := '0'
         );
     end component;
     
@@ -127,6 +136,10 @@ architecture Behavioral of hdmi_connection is
         );
     end component;
     
+    -- Signals from the position counters
+    signal hcounter : STD_LOGIC_VECTOR(11 downto 0);
+    signal vcounter : STD_LOGIC_VECTOR(11 downto 0);
+    
     -- Signals from the VGA generator
     signal pattern_r     : STD_LOGIC_VECTOR(7 downto 0);
     signal pattern_g     : STD_LOGIC_VECTOR(7 downto 0);
@@ -156,22 +169,33 @@ architecture Behavioral of hdmi_connection is
     
 begin
     
-    i_vga_generator: vga_generator
+    o_hcounter <= hcounter;
+    o_vcounter <= vcounter;
+    
+    position_counters_inst : position_counters
     port map (
-        i_clk   => i_clk,
-        i_color => i_color,
+        i_clk => i_clk,
         
-        o_hcounter => o_hcounter,
-        o_vcounter => o_vcounter,
-        o_r        => pattern_r,
-        o_g        => pattern_g,
-        o_b        => pattern_b,
-        o_de       => pattern_de,
-        o_hsync    => pattern_hsync,
-        o_vsync    => pattern_vsync
+        o_hcounter => hcounter,
+        o_vcounter => vcounter
     );
     
-    i_convert_444_422: convert_444_422
+    vga_generator_inst : vga_generator
+    port map (
+        i_clk      => i_clk,
+        i_color    => i_color,
+        i_hcounter => hcounter,
+        i_vcounter => vcounter,
+        
+        o_r     => pattern_r,
+        o_g     => pattern_g,
+        o_b     => pattern_b,
+        o_de    => pattern_de,
+        o_hsync => pattern_hsync,
+        o_vsync => pattern_vsync
+    );
+    
+    convert_444_422_inst : convert_444_422
     port map (
         i_clk   => i_clk,
         i_r     => pattern_r,
@@ -193,7 +217,7 @@ begin
         o_vsync      => c422_vsync
     );
     
-    i_csc: colour_space_conversion
+    colour_space_conversion_inst : colour_space_conversion
     port map (
         i_clk        => i_clk,
         i_r1         => c422_r1,
@@ -214,7 +238,7 @@ begin
         o_vsync => csc_vsync
     );
     
-    i_hdmi_ddr_output: hdmi_ddr_output
+    hdmi_ddr_output_inst : hdmi_ddr_output
     port map (
         i_clk   => i_clk,
         i_clk90 => i_clk90,

@@ -41,13 +41,6 @@ entity HEENSim is
         o_data_count : out STD_LOGIC_VECTOR(9 downto 0);
         o_ph_exec    : out STD_LOGIC;
         o_ph_dist    : out STD_LOGIC
-        
-        
---        o_mem_en     : out STD_LOGIC;
---        o_mem_addr   : out STD_LOGIC_VECTOR(10 downto 0);
---        o_mem_dout   : out STD_LOGIC_VECTOR(17 downto 0);
---        o_fifo_wr_en : out STD_LOGIC;
---        o_fifo_din   : out STD_LOGIC_VECTOR(17 downto 0)
     );
 end HEENSim;
 
@@ -101,15 +94,9 @@ architecture Behavioral of HEENSim is
     
 begin
     
---    o_mem_en     <= mem_en    ;
---    o_mem_addr   <= mem_addr  ;
---    o_mem_dout   <= mem_dout  ;
---    o_fifo_wr_en <= fifo_wr_en;
---    o_fifo_din   <= fifo_din  ;
-    
     fifo_rst <= i_rst or i_freeze_screen;
     
-    blk_mem_gen : blk_mem_gen_0 
+    blk_mem_gen_0_inst : blk_mem_gen_0 
     port map (
         clka   => i_clk,
         ena    => mem_en,
@@ -120,7 +107,7 @@ begin
         douta => mem_dout
     );
     
-    fifo_generator : fifo_generator_0  
+    fifo_generator_0_inst : fifo_generator_0  
     port map (
         clk    => i_clk,
         srst   => fifo_rst,

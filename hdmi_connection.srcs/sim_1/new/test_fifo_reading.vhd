@@ -133,7 +133,7 @@ architecture Behavioral of test_fifo_reading is
     
 begin
     
---    i_HEENSim : HEENSim
+--    HEENSim_inst : HEENSim
 --    generic map (
 --        G_DATA_SIZE => 5,
 --        G_PERIOD    => 125_000  -- Tspike = 1 ms
@@ -158,7 +158,7 @@ begin
 ----        o_fifo_din   => fifo_din
 --    );
     
---    i_blk_mem_gen_1 : blk_mem_gen_1
+--    blk_mem_gen_1_inst : blk_mem_gen_1
 --    port map (
 --        clka   => clk_150,
 --        ena    => mem_wr_en,

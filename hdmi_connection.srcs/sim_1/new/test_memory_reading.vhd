@@ -72,7 +72,7 @@ architecture Behavioral of test_memory_reading is
     
 begin
     
-    i_blk_mem_gen_1 : blk_mem_gen_1
+    blk_mem_gen_1_inst : blk_mem_gen_1
     port map (
         clka   => clk_150,
         ena    => '0',
@@ -103,7 +103,7 @@ begin
         i_mem_rd_data   => mem_rd_data,
         i_current_ts    => current_ts,
         i_extend_vaxis  => extend_vaxis_150,
-        i_bigger_dots   => bigger_dots_150,
+--        i_bigger_dots   => bigger_dots_150,
         
         o_mem_rd_en   => mem_rd_en,
         o_mem_rd_addr => mem_rd_addr,

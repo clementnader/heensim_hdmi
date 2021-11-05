@@ -44,20 +44,6 @@ entity read_fifo_spikes is
         o_mem_wr_we   : out STD_LOGIC := '0';
         o_mem_wr_addr : out STD_LOGIC_VECTOR(9 downto 0);
         o_mem_wr_din  : out STD_LOGIC_VECTOR(C_MAX_ID downto 0)
-        
-        
---        o_state                : out T_STATE;
---        o_neuron_id            : out STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
---        o_id_value             : out STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
---        o_buffer_en            : out STD_LOGIC;
---        o_buffer_we            : out STD_LOGIC;
---        o_buffer_addr          : out STD_LOGIC_VECTOR(4 downto 0);
---        o_buffer_din           : out STD_LOGIC_VECTOR(C_MAX_ID downto 0);
---        o_buffer_dout          : out STD_LOGIC_VECTOR(C_MAX_ID downto 0);
---        o_buffer_cnt           : out STD_LOGIC_VECTOR(4 downto 0) := (others => '0');
---        o_transfer_from_buffer : out STD_LOGIC;
---        o_transfer_addr        : out STD_LOGIC_VECTOR(9 downto 0);
---        o_current_ts           : out STD_LOGIC_VECTOR(31 downto 0)
     );
 end read_fifo_spikes;
 
@@ -102,10 +88,10 @@ architecture Behavioral of read_fifo_spikes is
         TRANSFER_WRITE
     );
     
-    signal state        : T_STATE := IDLE;
-    signal current_ts   : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0) := (others => '0');
-    signal neuron_id    : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
-    signal id_value     : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
+    signal state      : T_STATE := IDLE;
+    signal current_ts : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0) := (others => '0');
+    signal neuron_id  : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
+    signal id_value   : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
     
     signal buffer_en   : STD_LOGIC := '0';
     signal buffer_we   : STD_LOGIC := '0';
@@ -119,25 +105,11 @@ architecture Behavioral of read_fifo_spikes is
     signal transfer_addr        : STD_LOGIC_VECTOR(9 downto 0);
     signal transfer_rd_delay    : STD_LOGIC;
     
-    signal end_screen1 : STD_LOGIC;
-    signal end_screen2 : STD_LOGIC;
+    signal last_end_screen : STD_LOGIC;
     
 begin
     
---    o_state                <= state               ;
---    o_neuron_id            <= neuron_id           ;
---    o_id_value             <= id_value            ;
---    o_buffer_en            <= buffer_en           ;
---    o_buffer_we            <= buffer_we           ;
---    o_buffer_addr          <= buffer_addr         ;
---    o_buffer_din           <= buffer_din          ;
---    o_buffer_dout          <= buffer_dout         ;
---    o_buffer_cnt           <= buffer_cnt          ;
---    o_transfer_from_buffer <= transfer_from_buffer;
---    o_transfer_addr        <= transfer_addr       ;
---    o_current_ts           <= current_ts;
-    
-    i_blk_mem_gen_2 : blk_mem_gen_2
+    blk_mem_gen_2_inst : blk_mem_gen_2
     port map (
         clka   => i_clk,
         ena    => buffer_en,
@@ -152,10 +124,8 @@ begin
     begin
         if rising_edge(i_clk) then
             
-            end_screen1 <= i_end_screen;
-            end_screen2 <= end_screen1;
-            
-            if end_screen2 = '1' then
+            last_end_screen <= i_end_screen;
+            if last_end_screen = '0' and i_end_screen = '1' then  -- rising edge
                 transfer_from_buffer <= '1';
             end if;
             

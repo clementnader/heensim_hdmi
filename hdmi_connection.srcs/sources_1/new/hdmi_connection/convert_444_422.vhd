@@ -51,12 +51,12 @@ architecture Behavioral of convert_444_422 is
     
     -- flag is used to work out which pairs of pixels to sum.
     signal flag : STD_LOGIC;
-
+    
 begin
+    
     clk_proc: process(i_clk)
     begin
         if rising_edge(i_clk) then
-            
             -- sync pairs to the i_de going high (if a scan line has odd pixel count)
             if (d_a = '1' and d_a_last = '0') or flag = '1' then
                 o_r2 <= ('0' & r_a) + ('0' & i_r);
@@ -77,14 +77,13 @@ begin
             d_a      <= i_de;
             d_a_last <= d_a;
             
-            o_r1    <= r_a & "0";
-            o_g1    <= g_a & "0";
-            o_b1    <= b_a & "0";
+            o_r1    <= r_a & '0';
+            o_g1    <= g_a & '0';
+            o_b1    <= b_a & '0';
             o_hsync <= h_a;
             o_vsync <= v_a;
             o_de    <= d_a;
-            
         end if;
     end process;
-
+    
 end Behavioral;

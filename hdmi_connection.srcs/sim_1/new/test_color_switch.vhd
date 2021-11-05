@@ -86,7 +86,7 @@ architecture Behavioral of test_color_switch is
     signal color    : STD_LOGIC_VECTOR(23 downto 0) := (others => '0');
 
 begin
---    i_HEENSim : HEENSim
+--    HEENSim_inst : HEENSim
 --    generic map (
 --        data_size   => 10,
 --        exec_period => 1000

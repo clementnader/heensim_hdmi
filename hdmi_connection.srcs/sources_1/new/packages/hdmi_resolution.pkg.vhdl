@@ -20,7 +20,6 @@
 library IEEE;
     use IEEE.STD_LOGIC_1164.ALL;
     use IEEE.STD_LOGIC_UNSIGNED.ALL;
-    use IEEE.NUMERIC_STD.ALL;
 
 
 package hdmi_resolution is
@@ -35,7 +34,7 @@ package hdmi_resolution is
 --    constant C_RES_NAME : T_HDMI_RES_NAME := HDMI_RES_1280x720_60_P;   -- ( 75 MHz pixel clock needed)
 --    constant C_RES_NAME : T_HDMI_RES_NAME := HDMI_RES_1920x1080_60_P;  -- (150 MHz pixel clock needed)
     constant C_RES_NAME : T_HDMI_RES_NAME := HDMI_RES_1680x1050_60_P;  -- (150 MHz pixel clock needed)
-        
+    
     type T_HDMI_RES_VIDEO_TIMING is
         record
             ResolutionName : T_HDMI_RES_NAME;
@@ -52,16 +51,16 @@ package hdmi_resolution is
             VBackPorch     : INTEGER;    -- Vertical Back Porch Size
             VSyncPolarity  : STD_LOGIC;  -- Vertical Sync Polarity
         end record;
-
+    
     type T_HDMI_RES_VIDEO_TIMING_VEC is array(natural range <>) of T_HDMI_RES_VIDEO_TIMING;
-
+    
     constant C_HDMI_RES_VTIMING_RESOLUTIONS : T_HDMI_RES_VIDEO_TIMING_VEC := (
         --    name,                     hav,  hfp,  hsw,  hbp,  hsp,  vav,  vfp,  vsw,  vbp,  vsp
         0 => (HDMI_RES_1280x720_60_P,  1280,  110,   40,  220,  '1',  720,    5,    5,   20,  '1'),
         1 => (HDMI_RES_1920x1080_60_P, 1920,   88,   44,  148,  '1', 1080,    4,    5,   36,  '1'),
         2 => (HDMI_RES_1680x1050_60_P, 1680,  104,  184,  288,  '0', 1050,    1,    3,   33,  '1')
     );
-
+    
     function hdmi_res_get_resolution(
         res_name : T_HDMI_RES_NAME
     ) return T_HDMI_RES_VIDEO_TIMING;
@@ -75,7 +74,7 @@ package hdmi_resolution is
     constant C_H_END_SYNC    : STD_LOGIC_VECTOR(11 downto 0) := C_H_START_SYNC + C_VIDEO_TIMING.HSyncWidth;
     constant C_H_MAX         : STD_LOGIC_VECTOR(11 downto 0) := C_H_END_SYNC   + C_VIDEO_TIMING.HBackPorch;
     constant C_H_SYNC_ACTIVE : STD_LOGIC                     := C_VIDEO_TIMING.HSyncPolarity;
-   
+    
     constant C_V_VISIBLE     : STD_LOGIC_VECTOR(11 downto 0) := C_ZERO         + C_VIDEO_TIMING.VActiveVideo - 1;
     constant C_V_START_SYNC  : STD_LOGIC_VECTOR(11 downto 0) := C_V_VISIBLE    + C_VIDEO_TIMING.VFrontPorch;
     constant C_V_END_SYNC    : STD_LOGIC_VECTOR(11 downto 0) := C_V_START_SYNC + C_VIDEO_TIMING.VSyncWidth;
@@ -83,7 +82,6 @@ package hdmi_resolution is
     constant C_V_SYNC_ACTIVE : STD_LOGIC                     := C_VIDEO_TIMING.VSyncPolarity;
     
     constant C_NB_H_POINTS : STD_LOGIC_VECTOR(11 downto 0) := x"400";  -- 1024
---    constant C_H_OFFSET    : STD_LOGIC_VECTOR(11 downto 0) := x"040";  -- 64
     constant C_H_OFFSET    : STD_LOGIC_VECTOR(11 downto 0) := '0' & (C_H_VISIBLE(11 downto 1) - C_NB_H_POINTS(11 downto 1));  -- (C_H_VISIBLE - C_NB_H_POINTS) / 2
     constant C_V_OFFSET    : STD_LOGIC_VECTOR(11 downto 0) := x"040";  -- 64
     
@@ -94,7 +92,7 @@ end package;
 
 
 package body hdmi_resolution is
-
+    
     function hdmi_res_get_resolution(
         res_name : T_HDMI_RES_NAME
     ) return T_HDMI_RES_VIDEO_TIMING is
@@ -105,6 +103,6 @@ package body hdmi_resolution is
         end loop;
         return C_HDMI_RES_VTIMING_RESOLUTIONS(1);  -- default value HDMI_RES_1920x1080_60_P
     end function;
-
+    
 end package body;
 

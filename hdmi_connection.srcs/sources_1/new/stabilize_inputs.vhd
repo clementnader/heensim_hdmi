@@ -48,15 +48,15 @@ architecture Behavioral of stabilize_inputs is
     
 begin
     
-    gen_stabilize_input :
+    stabilize_input_gen :
     for i in 0 to G_NB_INPUTS-1 generate
-        i_stabilize_input : stabilize_input
+        stabilize_input_inst : stabilize_input
         port map (
             i_clk => i_clk,
             i_in  => i_in(i),
             
             o_out => o_out(i)
         );
-    end generate gen_stabilize_input;
+    end generate;
     
 end Behavioral;

@@ -27,7 +27,7 @@ entity colour_space_conversion is
         i_de         : in STD_LOGIC;
         i_hsync      : in STD_LOGIC;
         i_vsync      : in STD_LOGIC;
-  
+        
         o_y     : out STD_LOGIC_VECTOR(7 downto 0);
         o_c     : out STD_LOGIC_VECTOR(7 downto 0);
         o_de    : out STD_LOGIC;
@@ -38,6 +38,7 @@ end colour_space_conversion;
 
 
 architecture Behavioral of colour_space_conversion is
+    
     signal d_a : STD_LOGIC;
     signal h_a : STD_LOGIC;
     signal v_a : STD_LOGIC;
@@ -55,8 +56,9 @@ architecture Behavioral of colour_space_conversion is
     signal hs_delay : STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
     signal vs_delay : STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
     signal de_delay : STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
-
+    
 begin
+    
     --  y = ( 8432 * r + 16425 * g +  3176 * b) / 32768 + 16;
     -- cb = (-4818 * r -  9527 * g + 14345 * b) / 32768 + 128;
     -- cr = (14345 * r - 12045 * g -  2300 * b) / 32768 + 128; 
@@ -78,7 +80,7 @@ begin
     b_r2 <= x"ED2E" & "00" when i_pair_start = '1' else x"3809" & "00";
     b_g2 <= x"DAC9" & "00" when i_pair_start = '1' else x"D0F3" & "00";
     b_b2 <= x"3809" & "00" when i_pair_start = '1' else x"F704" & "00";
-
+    
     clk_proc : process(i_clk)
     begin
         if rising_edge(i_clk) then
@@ -365,7 +367,7 @@ begin
         RSTP => '0'                     -- 1-bit input: Reset input for PREG
     );
     
------------------------------------------------------------------------------------------------------------------
+    ------------------------------------------------------------------------------------------------------------
     mult_r2 : DSP48E1
     generic map (
         -- Feature Control Attributes: Data Path Selection
@@ -635,5 +637,5 @@ begin
         RSTM => '0',                    -- 1-bit input: Reset input for MREG
         RSTP => '0'                     -- 1-bit input: Reset input for PREG
     );
-
+    
 end Behavioral;
