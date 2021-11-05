@@ -40,7 +40,8 @@ end get_current_timestamp;
 
 architecture Behavioral of get_current_timestamp is
     
-    signal current_ts         : STD_LOGIC_VECTOR (C_LENGTH_TIMESTAMP-1 downto 0) := (others => '0');
+    signal current_ts : STD_LOGIC_VECTOR (C_LENGTH_TIMESTAMP-1 downto 0) := (others => '0');
+    
     signal last_ph_dist       : STD_LOGIC;
     signal last_freeze_screen : STD_LOGIC;
     
