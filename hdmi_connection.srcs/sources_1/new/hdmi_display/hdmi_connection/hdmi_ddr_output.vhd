@@ -19,6 +19,7 @@ entity hdmi_ddr_output is
     port (
         i_clk   : in STD_LOGIC;
         i_clk90 : in STD_LOGIC;
+        i_rst   : in STD_LOGIC;
         i_y     : in STD_LOGIC_VECTOR(7 downto 0);
         i_c     : in STD_LOGIC_VECTOR(7 downto 0);
         i_de    : in STD_LOGIC;
@@ -41,6 +42,7 @@ architecture Behavioral of hdmi_ddr_output is
     component i2c_sender
         port (
             i_clk : in STD_LOGIC;
+            i_rst : in STD_LOGIC;
             
             o_sioc : out STD_LOGIC;
             o_siod : out STD_LOGIC
@@ -52,8 +54,10 @@ begin
     clk_proc : process(i_clk)
     begin
         if rising_edge(i_clk) then
+            
             o_hdmi_vsync <= i_vsync;
             o_hdmi_hsync <= i_hsync;
+            
         end if;
     end process;
     
@@ -116,6 +120,7 @@ begin
     i2c_sender_inst : i2c_sender
     port map (
         i_clk => i_clk,
+        i_rst => i_rst,
         
         o_sioc => o_hdmi_scl,
         o_siod => o_hdmi_sda

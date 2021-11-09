@@ -47,20 +47,6 @@ package events_list is
         neuron_id : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0)
     ) return STD_LOGIC_VECTOR;
     
-    
---    type T_STATE is (
---        IDLE,
---        EMPTY_MEM,
---        FIFO_READ,
---        WAIT_BEFORE_CHECK_VALID,
---        CHECK_VALID,
---        WAIT_BEFORE_MEM_READ,
---        MEM_WRITE,
---        FIFO_EMPTY,
---        WAIT_BEFORE_TRANSFER_READ,
---        TRANSFER_WRITE
---    );
-    
 end package;
 
 

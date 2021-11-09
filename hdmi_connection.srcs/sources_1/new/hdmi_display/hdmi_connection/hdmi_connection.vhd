@@ -27,9 +27,12 @@ library work;
 
 entity hdmi_connection is
     port (
-        i_clk   : in STD_LOGIC;
-        i_clk90 : in STD_LOGIC;
-        i_color : in STD_LOGIC_VECTOR(23 downto 0);
+        i_clk      : in STD_LOGIC;
+        i_clk90    : in STD_LOGIC;
+        i_rst      : in STD_LOGIC;
+        i_color    : in STD_LOGIC_VECTOR(23 downto 0);
+        i_hcounter : in STD_LOGIC_VECTOR(11 downto 0);
+        i_vcounter : in STD_LOGIC_VECTOR(11 downto 0);
         
         o_hcounter   : out STD_LOGIC_VECTOR(11 downto 0);
         o_vcounter   : out STD_LOGIC_VECTOR(11 downto 0);
@@ -49,6 +52,7 @@ architecture Behavioral of hdmi_connection is
     component position_counters
         port (
             i_clk : in STD_LOGIC;
+            i_rst : in STD_LOGIC;
             
             o_hcounter : out STD_LOGIC_VECTOR(11 downto 0);
             o_vcounter : out STD_LOGIC_VECTOR(11 downto 0)
@@ -66,8 +70,8 @@ architecture Behavioral of hdmi_connection is
             o_g     : out STD_LOGIC_VECTOR(7 downto 0);
             o_b     : out STD_LOGIC_VECTOR(7 downto 0);
             o_de    : out STD_LOGIC;
-            o_hsync : out STD_LOGIC := '0';
-            o_vsync : out STD_LOGIC := '0'
+            o_hsync : out STD_LOGIC;
+            o_vsync : out STD_LOGIC
         );
     end component;
     
@@ -94,7 +98,7 @@ architecture Behavioral of hdmi_connection is
         );
     end component;
     
-    component colour_space_conversion
+    component color_space_conversion
         port (
             i_clk        : in STD_LOGIC;
             i_r1         : in STD_LOGIC_VECTOR(8 downto 0);
@@ -120,6 +124,7 @@ architecture Behavioral of hdmi_connection is
         port (
             i_clk   : in STD_LOGIC;
             i_clk90 : in STD_LOGIC;
+            i_rst   : in STD_LOGIC;
             i_y     : in STD_LOGIC_VECTOR(7 downto 0);
             i_c     : in STD_LOGIC_VECTOR(7 downto 0);
             i_de    : in STD_LOGIC;
@@ -135,10 +140,6 @@ architecture Behavioral of hdmi_connection is
             o_hdmi_sda   : out STD_LOGIC
         );
     end component;
-    
-    -- Signals from the position counters
-    signal hcounter : STD_LOGIC_VECTOR(11 downto 0);
-    signal vcounter : STD_LOGIC_VECTOR(11 downto 0);
     
     -- Signals from the VGA generator
     signal pattern_r     : STD_LOGIC_VECTOR(7 downto 0);
@@ -169,23 +170,21 @@ architecture Behavioral of hdmi_connection is
     
 begin
     
-    o_hcounter <= hcounter;
-    o_vcounter <= vcounter;
-    
     position_counters_inst : position_counters
     port map (
         i_clk => i_clk,
+        i_rst => i_rst,
         
-        o_hcounter => hcounter,
-        o_vcounter => vcounter
+        o_hcounter => o_hcounter,
+        o_vcounter => o_vcounter
     );
     
     vga_generator_inst : vga_generator
     port map (
         i_clk      => i_clk,
         i_color    => i_color,
-        i_hcounter => hcounter,
-        i_vcounter => vcounter,
+        i_hcounter => i_hcounter,
+        i_vcounter => i_vcounter,
         
         o_r     => pattern_r,
         o_g     => pattern_g,
@@ -217,7 +216,7 @@ begin
         o_vsync      => c422_vsync
     );
     
-    colour_space_conversion_inst : colour_space_conversion
+    color_space_conversion_inst : color_space_conversion
     port map (
         i_clk        => i_clk,
         i_r1         => c422_r1,
@@ -242,6 +241,7 @@ begin
     port map (
         i_clk   => i_clk,
         i_clk90 => i_clk90,
+        i_rst   => i_rst,
         i_y     => csc_y,
         i_c     => csc_c,
         i_de    => csc_de,

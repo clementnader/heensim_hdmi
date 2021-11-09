@@ -14,7 +14,7 @@ library UNISIM;
     use UNISIM.VComponents.ALL;
 
 
-entity colour_space_conversion is
+entity color_space_conversion is
     port (
         i_clk        : in STD_LOGIC;
         i_r1         : in STD_LOGIC_VECTOR(8 downto 0);
@@ -34,10 +34,10 @@ entity colour_space_conversion is
         o_hsync : out STD_LOGIC;
         o_vsync : out STD_LOGIC
     );
-end colour_space_conversion;
+end color_space_conversion;
 
 
-architecture Behavioral of colour_space_conversion is
+architecture Behavioral of color_space_conversion is
     
     signal d_a : STD_LOGIC;
     signal h_a : STD_LOGIC;
@@ -53,9 +53,9 @@ architecture Behavioral of colour_space_conversion is
     signal b_r2,  b_g2,  b_b2 : STD_LOGIC_VECTOR(17 downto 0);
     signal pc_r2, pc_g2, p_b2 : STD_LOGIC_VECTOR(47 downto 0);
     
-    signal hs_delay : STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
-    signal vs_delay : STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
-    signal de_delay : STD_LOGIC_VECTOR(3 downto 0) := (others => '0');
+    signal hs_delay : STD_LOGIC_VECTOR(3 downto 0);
+    signal vs_delay : STD_LOGIC_VECTOR(3 downto 0);
+    signal de_delay : STD_LOGIC_VECTOR(3 downto 0);
     
 begin
     
@@ -84,6 +84,7 @@ begin
     clk_proc : process(i_clk)
     begin
         if rising_edge(i_clk) then
+            
             o_de    <= de_delay(de_delay'high);
             o_hsync <= hs_delay(hs_delay'high);
             o_vsync <= vs_delay(vs_delay'high);
@@ -94,6 +95,7 @@ begin
             
             o_y <= p_b1(40 downto 33);
             o_c <= p_b2(40 downto 33);
+            
         end if;
     end process;
     

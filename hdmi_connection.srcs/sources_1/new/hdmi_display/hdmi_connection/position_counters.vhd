@@ -29,6 +29,7 @@ library work;
 entity position_counters is
     port (
         i_clk : in STD_LOGIC;
+        i_rst : in STD_LOGIC;
         
         o_hcounter : out STD_LOGIC_VECTOR(11 downto 0);
         o_vcounter : out STD_LOGIC_VECTOR(11 downto 0)
@@ -49,19 +50,26 @@ begin
     clk_process: process(i_clk)
     begin
         if rising_edge(i_clk) then
-            -- Advance the position counters
-            if hcounter < C_H_MAX then
-                hcounter <= hcounter + 1;
-            else
-                -- starting a new line
+            
+            if i_rst = '1' then
                 hcounter <= (others => '0');
-                if vcounter < C_V_MAX then
-                    vcounter <= vcounter + 1;
+                vcounter <= (others => '0');
+            else
+                -- Advance the position counters
+                if hcounter < C_H_MAX then
+                    hcounter <= hcounter + 1;
                 else
-                    -- starting a new screen
-                    vcounter <= (others => '0');
+                    -- starting a new line
+                    hcounter <= (others => '0');
+                    if vcounter < C_V_MAX then
+                        vcounter <= vcounter + 1;
+                    else
+                        -- starting a new screen
+                        vcounter <= (others => '0');
+                    end if;
                 end if;
             end if;
+            
         end if;
     end process;
     

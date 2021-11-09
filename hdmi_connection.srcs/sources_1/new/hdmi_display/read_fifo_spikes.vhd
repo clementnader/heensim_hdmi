@@ -34,16 +34,16 @@ entity read_fifo_spikes is
         i_rst           : in STD_LOGIC;
         i_freeze_screen : in STD_LOGIC;
         i_ph_dist       : in STD_LOGIC;
-        i_empty         : in STD_LOGIC;
-        i_valid         : in STD_LOGIC;
+        i_fifo_empty    : in STD_LOGIC;
+        i_fifo_valid    : in STD_LOGIC;
         i_fifo_dout     : in STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
         i_end_screen    : in STD_LOGIC;
         
-        o_fifo_rd_en  : out STD_LOGIC := '0';
-        o_mem_wr_en   : out STD_LOGIC := '0';
-        o_mem_wr_we   : out STD_LOGIC := '0';
-        o_mem_wr_addr : out STD_LOGIC_VECTOR(9 downto 0);
-        o_mem_wr_din  : out STD_LOGIC_VECTOR(C_MAX_ID downto 0)
+        o_hdmi_ready_rd_fifo : out STD_LOGIC;
+        o_mem_wr_en          : out STD_LOGIC;
+        o_mem_wr_we          : out STD_LOGIC;
+        o_mem_wr_addr        : out STD_LOGIC_VECTOR(9 downto 0);
+        o_mem_wr_din         : out STD_LOGIC_VECTOR(C_MAX_ID downto 0)
     );
 end read_fifo_spikes;
 
@@ -75,7 +75,7 @@ architecture Behavioral of read_fifo_spikes is
             return new_memory;
     end function;
     
-    type T_STATE is (
+    type T_FIFO_RD_STATE is (
         IDLE,
         EMPTY_MEM,
         FIFO_READ,
@@ -88,20 +88,20 @@ architecture Behavioral of read_fifo_spikes is
         TRANSFER_WRITE
     );
     
-    signal state      : T_STATE := IDLE;
-    signal current_ts : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0) := (others => '0');
-    signal neuron_id  : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
-    signal id_value   : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
+    signal fifo_rd_state : T_FIFO_RD_STATE := IDLE;
+    signal current_ts    : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0) := (others => '0');
+    signal neuron_id     : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
+    signal id_value      : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
     
-    signal buffer_en   : STD_LOGIC := '0';
-    signal buffer_we   : STD_LOGIC := '0';
+    signal buffer_en   : STD_LOGIC;
+    signal buffer_we   : STD_LOGIC;
     signal buffer_addr : STD_LOGIC_VECTOR(4 downto 0);
     signal buffer_din  : STD_LOGIC_VECTOR(C_MAX_ID downto 0);
     signal buffer_dout : STD_LOGIC_VECTOR(C_MAX_ID downto 0);
     
     signal buffer_cnt : STD_LOGIC_VECTOR(4 downto 0) := (others => '0');
     
-    signal transfer_from_buffer : STD_LOGIC := '0';
+    signal transfer_from_buffer : STD_LOGIC;
     signal transfer_addr        : STD_LOGIC_VECTOR(9 downto 0);
     signal transfer_rd_delay    : STD_LOGIC;
     
@@ -130,7 +130,7 @@ begin
             end if;
             
             if i_rst = '1' or i_freeze_screen = '1' then
-                o_fifo_rd_en         <= '0';
+                o_hdmi_ready_rd_fifo <= '1';  -- to empty the FIFO
                 o_mem_wr_en          <= '0';
                 o_mem_wr_we          <= '0';
                 buffer_en            <= '0';
@@ -138,14 +138,15 @@ begin
                 buffer_cnt           <= (others => '0');
                 transfer_from_buffer <= '0';
                 current_ts           <= (others => '0');
-                state <= IDLE;
+                fifo_rd_state <= IDLE;
                 
             else
-                case state is
+                case fifo_rd_state is
                     
                     when IDLE =>
                         if i_ph_dist = '1' then  -- a new distribution phase
-                            state <= EMPTY_MEM;
+                            o_hdmi_ready_rd_fifo <= '0';
+                            fifo_rd_state <= EMPTY_MEM;
                         end if;
                     
                     when EMPTY_MEM =>
@@ -154,62 +155,65 @@ begin
                         buffer_addr <= buffer_cnt;
                         buffer_din  <= C_BLANK_MEMORY;
                         buffer_cnt  <= buffer_cnt + 1;
-                        if i_empty = '0' then
-                            state <= FIFO_READ;  -- try to read from the FIFO
+                        if i_fifo_empty = '0' then
+                            o_hdmi_ready_rd_fifo <= '1';
+                            fifo_rd_state <= FIFO_READ;  -- try to read from the FIFO
                         else
-                            state <= FIFO_EMPTY;
+                            fifo_rd_state <= FIFO_EMPTY;
                         end if;
                     
                     when FIFO_READ =>
-                        buffer_en <= '0';
-                        buffer_we <= '0';
-                        if i_empty = '0' then
-                            o_fifo_rd_en <= '1';
-                            state <= WAIT_BEFORE_CHECK_VALID;
+                        o_hdmi_ready_rd_fifo <= '0';
+                        buffer_en            <= '0';
+                        buffer_we            <= '0';
+                        if i_fifo_empty = '0' then
+                            fifo_rd_state <= WAIT_BEFORE_CHECK_VALID;
                         else  -- the FIFO is empty
-                            state <= FIFO_EMPTY;
+                            fifo_rd_state <= FIFO_EMPTY;
                         end if;
                     
                     when WAIT_BEFORE_CHECK_VALID =>  -- delay of one period before checking the i_valid signal from the FIFO
-                        o_fifo_rd_en <= '0';
-                        state <= CHECK_VALID;
+                        fifo_rd_state <= CHECK_VALID;
                     
                     when CHECK_VALID =>
-                        if i_valid = '1' then  -- the read value is valid, it can be saved in the memory
+                        if i_fifo_valid = '1' then  -- the read value is valid, it can be saved in the memory
                             neuron_id <= i_fifo_dout;
                             buffer_en <= '1';
-                            state <= WAIT_BEFORE_MEM_READ;
+                            fifo_rd_state <= WAIT_BEFORE_MEM_READ;
                         else  -- we try to read again
-                            state <= FIFO_READ;
+                            o_hdmi_ready_rd_fifo <= '1';
+                            fifo_rd_state <= FIFO_READ;
                         end if;
                     
                     when WAIT_BEFORE_MEM_READ =>
                         id_value <= get_id_value(neuron_id);  -- compute the transform from the neuron_id on 18 bits to a number from 0 to C_MAX_ID(=199 for the ZedBoard)
-                        state <= MEM_WRITE;
+                        fifo_rd_state <= MEM_WRITE;
                     
                     when MEM_WRITE =>  -- write the new vertical array, and return to read the FIFO again
                         -- the new column has a '1' at the vertical position corresponding to the ID value
-                        buffer_din <= convert_neuron_id(id_value, buffer_dout);
-                        buffer_we  <= '1';
-                        state <= FIFO_READ;
+                        buffer_din           <= convert_neuron_id(id_value, buffer_dout);
+                        buffer_we            <= '1';
+                        o_hdmi_ready_rd_fifo <= '1';
+                        fifo_rd_state <= FIFO_READ;
                     
                     when FIFO_EMPTY =>
                         buffer_en   <= '0';
                         buffer_we   <= '0';
                         o_mem_wr_en <= '0';
                         o_mem_wr_we <= '0';
-                        if i_empty = '0' then
-                            state <= FIFO_READ;
+                        if i_fifo_empty = '0' then
+                            o_hdmi_ready_rd_fifo <= '1';
+                            fifo_rd_state <= FIFO_READ;
                         elsif transfer_from_buffer = '1' then
                             transfer_from_buffer <= '0';
                             transfer_addr        <= current_ts(transfer_addr'high downto 0) - (buffer_cnt-1);
                             buffer_en            <= '1';
                             buffer_addr          <= (others => '0');
                             transfer_rd_delay    <= '0';
-                            state <= WAIT_BEFORE_TRANSFER_READ;
+                            fifo_rd_state <= WAIT_BEFORE_TRANSFER_READ;
                         elsif i_ph_dist = '0' then  -- the end of the distribution phase
                             current_ts <= current_ts + 1;  -- increment the timestamp
-                            state <= IDLE;
+                            fifo_rd_state <= IDLE;
                         end if;
                     
                     when WAIT_BEFORE_TRANSFER_READ =>
@@ -217,7 +221,7 @@ begin
                         if transfer_rd_delay = '0' then
                             transfer_rd_delay <= '1';
                         else
-                            state <= TRANSFER_WRITE;
+                            fifo_rd_state <= TRANSFER_WRITE;
                         end if;
                     
                     when TRANSFER_WRITE =>
@@ -225,21 +229,21 @@ begin
                         o_mem_wr_we   <= '1';
                         o_mem_wr_addr <= transfer_addr;
                         o_mem_wr_din  <= buffer_dout;
-                        if buffer_addr < buffer_cnt+1 then
+                        if buffer_addr < buffer_cnt + 1 then
                             buffer_addr   <= buffer_addr + 1;
                             transfer_addr <= transfer_addr + 1;
                         else
                             buffer_cnt <= (others => '0');
-                            state <= FIFO_EMPTY;
+                            fifo_rd_state <= FIFO_EMPTY;
                         end if;
                     
                     when others =>
-                        o_fifo_rd_en <= '0';
-                        buffer_en    <= '0';
-                        buffer_we    <= '0';
-                        o_mem_wr_en  <= '0';
-                        o_mem_wr_we  <= '0';
-                        state <= IDLE;
+                        o_hdmi_ready_rd_fifo <= '0';
+                        buffer_en            <= '0';
+                        buffer_we            <= '0';
+                        o_mem_wr_en          <= '0';
+                        o_mem_wr_we          <= '0';
+                        fifo_rd_state <= IDLE;
                     
                 end case;
             end if;

@@ -17,6 +17,7 @@ library IEEE;
 entity i2c_sender is
     port (
         i_clk : in STD_LOGIC;
+        i_rst : in STD_LOGIC;
         
         o_sioc : out STD_LOGIC;
         o_siod : out STD_LOGIC
@@ -26,17 +27,6 @@ end i2c_sender;
 
 architecture Behavioral of i2c_sender is
     
-    signal divider           : STD_LOGIC_VECTOR(8 downto 0)  := (others => '0'); 
-    -- this value gives nearly 200ms cycles before the first register is written
-    signal initial_pause     : STD_LOGIC_VECTOR(23 downto 0) := (others => '0');
-    signal finished          : STD_LOGIC := '0';
-    signal address           : STD_LOGIC_VECTOR( 7 downto 0) := (others => '0');
-    signal clk_first_quarter : STD_LOGIC_VECTOR(28 downto 0) := (others => '1');
-    signal clk_last_quarter  : STD_LOGIC_VECTOR(28 downto 0) := (others => '1');
-    signal busy_sr           : STD_LOGIC_VECTOR(28 downto 0) := (others => '1');
-    signal data_sr           : STD_LOGIC_VECTOR(28 downto 0) := (others => '1');
-    signal tristate_sr       : STD_LOGIC_VECTOR(28 downto 0) := (others => '0');
-    signal reg_value         : STD_LOGIC_VECTOR(15 downto 0) := (others => '0');
     constant C_I2C_WR_ADDR   : STD_LOGIC_VECTOR( 7 downto 0) := x"72";
     
     type T_REG_VALUE_PAIR is array(0 to 63) of STD_LOGIC_VECTOR(15 downto 0);    
@@ -84,6 +74,18 @@ architecture Behavioral of i2c_sender is
         x"FFFF", x"FFFF", x"FFFF", x"FFFF", x"FFFF", x"FFFF"
     );
     
+    signal divider           : STD_LOGIC_VECTOR(8 downto 0)  := (others => '0');
+    -- this value gives nearly 200ms cycles before the first register is written
+    signal initial_pause     : STD_LOGIC_VECTOR(23 downto 0) := (others => '0');
+    signal finished          : STD_LOGIC := '0';
+    signal address           : STD_LOGIC_VECTOR( 7 downto 0) := (others => '0');
+    signal clk_first_quarter : STD_LOGIC_VECTOR(28 downto 0) := (others => '1');
+    signal clk_last_quarter  : STD_LOGIC_VECTOR(28 downto 0) := (others => '1');
+    signal busy_sr           : STD_LOGIC_VECTOR(28 downto 0) := (others => '1');
+    signal data_sr           : STD_LOGIC_VECTOR(28 downto 0) := (others => '1');
+    signal tristate_sr       : STD_LOGIC_VECTOR(28 downto 0) := (others => '0');
+    signal reg_value         : STD_LOGIC_VECTOR(15 downto 0);
+    
 begin
     
     registers: process(i_clk)
@@ -110,40 +112,54 @@ begin
     i2c_send: process(i_clk)
     begin
         if rising_edge(i_clk) then
-            if busy_sr(busy_sr'high) = '0' then
-                if initial_pause(initial_pause'high) = '0' then
-                    initial_pause <= initial_pause + 1;
-                elsif finished = '0' then
-                    if divider = "111111111" then
-                        divider <= (others =>'0');
-                        if reg_value(15 downto 8) = x"FF" then
-                            finished <= '1';
+            
+            if i_rst = '1' then
+                divider           <= (others => '0');
+                initial_pause     <= (others => '0');
+                finished          <= '0';
+                address           <= (others => '0');
+                clk_first_quarter <= (others => '1');
+                clk_last_quarter  <= (others => '1');
+                busy_sr           <= (others => '1');
+                data_sr           <= (others => '1');
+                tristate_sr       <= (others => '0');
+            else
+                if busy_sr(busy_sr'high) = '0' then
+                    if initial_pause(initial_pause'high) = '0' then
+                        initial_pause <= initial_pause + 1;
+                    elsif finished = '0' then
+                        if divider = "111111111" then
+                            divider <= (others =>'0');
+                            if reg_value(15 downto 8) = x"FF" then
+                                finished <= '1';
+                            else
+                                -- move the new data into the shift registers
+                                clk_first_quarter <= (clk_first_quarter'high => '1', others => '0');
+                                clk_last_quarter  <= (0 => '1', others => '0');
+                                --            Start     Address      Ack         Register           Ack           Value           Ack   Stop
+                                tristate_sr <= "0" & "00000000"    & "1" & "00000000"             & "1" & "00000000"            & "1"  & "0";
+                                data_sr     <= "0" & C_I2C_WR_ADDR & "1" & reg_value(15 downto 8) & "1" & reg_value(7 downto 0) & "1"  & "0";
+                                busy_sr     <= (others => '1');
+                                address     <= address + 1;
+                            end if;
                         else
-                            -- move the new data into the shift registers
-                            clk_first_quarter <= (clk_first_quarter'high => '1', others => '0');
-                            clk_last_quarter  <= (0 => '1', others => '0');
-                            --            Start     Address      Ack         Register           Ack           Value           Ack   Stop
-                            tristate_sr <= "0" & "00000000"    & "1" & "00000000"             & "1" & "00000000"            & "1"  & "0";
-                            data_sr     <= "0" & C_I2C_WR_ADDR & "1" & reg_value(15 downto 8) & "1" & reg_value(7 downto 0) & "1"  & "0";
-                            busy_sr     <= (others => '1');
-                            address     <= address + 1;
+                            divider <= divider + 1; 
                         end if;
+                    end if;
+                else
+                    if divider = "111111111" then   -- divide i_clk by 128 for I2C
+                        tristate_sr       <= tristate_sr(tristate_sr'high-1 downto 0) & '0';
+                        busy_sr           <= busy_sr(busy_sr'high-1 downto 0) & '0';
+                        data_sr           <= data_sr(data_sr'high-1 downto 0) & '1';
+                        clk_first_quarter <= clk_first_quarter(clk_first_quarter'high-1 downto 0) & '1';
+                        clk_last_quarter  <= clk_last_quarter(clk_last_quarter'high-1   downto 0) & '1';
+                        divider           <= (others => '0');
                     else
-                        divider <= divider + 1; 
+                        divider <= divider + 1;
                     end if;
                 end if;
-            else
-                if divider = "111111111" then   -- divide i_clk by 128 for I2C
-                    tristate_sr       <= tristate_sr(tristate_sr'high-1 downto 0) & '0';
-                    busy_sr           <= busy_sr(busy_sr'high-1 downto 0) & '0';
-                    data_sr           <= data_sr(data_sr'high-1 downto 0) & '1';
-                    clk_first_quarter <= clk_first_quarter(clk_first_quarter'high-1 downto 0) & '1';
-                    clk_last_quarter  <= clk_last_quarter(clk_last_quarter'high-1   downto 0) & '1';
-                    divider           <= (others => '0');
-                else
-                    divider <= divider + 1;
-                end if;
             end if;
+            
         end if;
     end process;
     

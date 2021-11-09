@@ -57,6 +57,7 @@ begin
     clk_proc: process(i_clk)
     begin
         if rising_edge(i_clk) then
+            
             -- sync pairs to the i_de going high (if a scan line has odd pixel count)
             if (d_a = '1' and d_a_last = '0') or flag = '1' then
                 o_r2 <= ('0' & r_a) + ('0' & i_r);
@@ -83,6 +84,7 @@ begin
             o_hsync <= h_a;
             o_vsync <= v_a;
             o_de    <= d_a;
+            
         end if;
     end process;
     

@@ -30,15 +30,15 @@ entity HEENSim is
         G_PERIOD    : INTEGER := 125_000  -- 1 ms
     );
     port (
-        i_clk           : in STD_LOGIC;
-        i_rst           : in STD_LOGIC;
-        i_freeze_screen : in STD_LOGIC;
-        i_rd_en         : in STD_LOGIC;
+        i_clk                : in STD_LOGIC;
+        i_rst                : in STD_LOGIC;
+        i_hdmi_ready_rd_fifo : in STD_LOGIC;
         
-        o_dout       : out STD_LOGIC_VECTOR(17 downto 0);
-        o_empty      : out STD_LOGIC;
-        o_valid      : out STD_LOGIC;
-        o_data_count : out STD_LOGIC_VECTOR(9 downto 0);
+        o_fifo_dout  : out STD_LOGIC_VECTOR(17 downto 0);
+        o_fifo_empty : out STD_LOGIC;
+        o_fifo_valid : out STD_LOGIC;
+        o_ph_init    : out STD_LOGIC;
+        o_ph_conf    : out STD_LOGIC;
         o_ph_exec    : out STD_LOGIC;
         o_ph_dist    : out STD_LOGIC
     );
@@ -60,11 +60,11 @@ architecture Behavioral of HEENSim is
     
     component fifo_generator_0
         port (
-            clk    : in STD_LOGIC;
-            srst   : in STD_LOGIC;
-            din    : in STD_LOGIC_VECTOR(17 downto 0);
-            wr_en  : in STD_LOGIC;
-            rd_en  : in STD_LOGIC;
+            clk   : in STD_LOGIC;
+            srst  : in STD_LOGIC;
+            din   : in STD_LOGIC_VECTOR(17 downto 0);
+            wr_en : in STD_LOGIC;
+            rd_en : in STD_LOGIC;
             
             dout       : out STD_LOGIC_VECTOR(17 downto 0);
             full       : out STD_LOGIC;
@@ -74,13 +74,16 @@ architecture Behavioral of HEENSim is
         );
     end component;
     
-    type phasestate_fsm is (
-        IDLE_PHASE,
+    type T_PHASESTATE_FSM is (
+        INIT_PHASE,
+        CONF_PHASE,
         EXEC_PHASE,
         EXEC_WRITE,
-        DIST_PHASE
+        DIST_PHASE,
+        DIST_READ
     );
-    signal phase_state : phasestate_fsm;
+    
+    signal phase_state : T_PHASESTATE_FSM := INIT_PHASE;
     -- BRAM
     signal mem_en   : STD_LOGIC;
     signal mem_addr : STD_LOGIC_VECTOR(10 downto 0);
@@ -89,12 +92,13 @@ architecture Behavioral of HEENSim is
     signal fifo_rst   : STD_LOGIC;
     signal fifo_wr_en : STD_LOGIC;
     signal fifo_din   : STD_LOGIC_VECTOR(17 downto 0);
+    signal fifo_rd_en : STD_LOGIC;
+    signal fifo_empty : STD_LOGIC;
     -- OTHERS
-    signal count : STD_LOGIC_VECTOR(23 downto 0) := (others => '0');
+    signal count        : STD_LOGIC_VECTOR(11 downto 0);
+    signal period_count : STD_LOGIC_VECTOR(23 downto 0);
     
 begin
-    
-    fifo_rst <= i_rst or i_freeze_screen;
     
     blk_mem_gen_0_inst : blk_mem_gen_0 
     port map (
@@ -109,45 +113,57 @@ begin
     
     fifo_generator_0_inst : fifo_generator_0  
     port map (
-        clk    => i_clk,
-        srst   => fifo_rst,
-        din    => fifo_din,
-        wr_en  => fifo_wr_en,
-        rd_en  => i_rd_en,
+        clk   => i_clk,
+        srst  => i_rst,
+        din   => fifo_din,
+        wr_en => fifo_wr_en,
+        rd_en => fifo_rd_en,
         
-        dout       => o_dout,
+        dout       => o_fifo_dout,
         full       => open,
-        empty      => o_empty,
-        valid      => o_valid,
-        data_count => o_data_count
+        empty      => fifo_empty,
+        valid      => o_fifo_valid,
+        data_count => open
     );
     
-    o_ph_dist  <= '1' when phase_state = DIST_PHASE else '0';
-    o_ph_exec  <= '1' when phase_state = EXEC_PHASE or phase_state = EXEC_WRITE else '0';
+    o_ph_init <= '1' when phase_state = INIT_PHASE else '0';
+    o_ph_conf <= '1' when phase_state = CONF_PHASE else '0';
+    o_ph_exec <= '1' when phase_state = EXEC_PHASE or phase_state = EXEC_WRITE else '0';
+    o_ph_dist <= '1' when phase_state = DIST_PHASE or phase_state = DIST_READ else '0';
+    
+    o_fifo_empty <= fifo_empty;
     
     process(i_clk)
     begin
         if rising_edge(i_clk) then
             
             if i_rst = '1' then
-                phase_state <= IDLE_PHASE;
-                mem_addr    <= (others => '0');
-                count       <= (others => '0');
-                fifo_wr_en  <= '0';
-                mem_en      <= '0';
-            
+                fifo_wr_en   <= '0';
+                fifo_rd_en   <= '0';
+                mem_en       <= '0';
+                mem_addr     <= (others => '0');
+                count        <= (others => '0');
+                period_count <= (others => '0');
+                phase_state  <= INIT_PHASE;
+                
             else
                 case phase_state is
                     
-                    when IDLE_PHASE =>
-                        if count < 9 then
-                            count <= count + 1;
-                        else
-                            count       <= (others => '0');
-                            phase_state <= EXEC_PHASE;
-                        end if;
-                    
+                    when INIT_PHASE =>
+                        fifo_wr_en   <= '0';
+                        fifo_rd_en   <= '0';
+                        mem_en       <= '0';
+                        count        <= (others => '0');
+                        period_count <= (others => '0');
+                        phase_state  <= CONF_PHASE;
+                        
+                    when CONF_PHASE =>
+                        count        <= (others => '0');
+                        period_count <= (others => '0');
+                        phase_state  <= EXEC_PHASE;
+                        
                     when EXEC_PHASE =>
+                        period_count <= period_count + 1;
                         if count < G_DATA_SIZE + 1 then
                             mem_en      <= '1';
                             fifo_wr_en  <= '0';
@@ -160,8 +176,9 @@ begin
                             mem_en      <= '0';
                             phase_state <= DIST_PHASE;
                         end if;
-                    
+                        
                     when EXEC_WRITE =>
+                        period_count <= period_count + 1;
                         if count > 0 then
                             fifo_wr_en <= '1';
                         end if;
@@ -170,17 +187,25 @@ begin
                         end if;
                         count       <= count + 1;
                         phase_state <= EXEC_PHASE;
-                    
+                        
                     when DIST_PHASE =>
-                        if count < G_PERIOD then
-                            count <= count + 1;
-                        else
-                            count       <= (others => '0');
-                            phase_state <= EXEC_PHASE;
+                        period_count <= period_count + 1;
+                        if fifo_empty = '0' and i_hdmi_ready_rd_fifo = '1' then
+                            fifo_rd_en  <= '1';
+                            phase_state <= DIST_READ;
+                        elsif fifo_empty = '1' and period_count = G_PERIOD then
+                            count        <= (others => '0');
+                            period_count <= (others => '0');
+                            phase_state  <= EXEC_PHASE;
                         end if;
-                    
+                        
+                    when DIST_READ =>
+                        period_count <= period_count + 1;
+                        fifo_rd_en  <= '0';
+                        phase_state <= DIST_PHASE;
+                        
                     when others =>
-                        phase_state <= IDLE_PHASE;
+                        phase_state <= INIT_PHASE;
                     
                 end case;
             end if;

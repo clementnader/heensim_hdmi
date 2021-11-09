@@ -26,8 +26,8 @@ entity vga_generator is
         o_g     : out STD_LOGIC_VECTOR(7 downto 0);
         o_b     : out STD_LOGIC_VECTOR(7 downto 0);
         o_de    : out STD_LOGIC;
-        o_hsync : out STD_LOGIC := '0';
-        o_vsync : out STD_LOGIC := '0'
+        o_hsync : out STD_LOGIC;
+        o_vsync : out STD_LOGIC
     );
 end vga_generator;
 

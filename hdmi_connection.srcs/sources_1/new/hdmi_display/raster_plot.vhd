@@ -39,6 +39,8 @@ entity raster_plot is
         i_current_ts    : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
         i_extend_vaxis  : in STD_LOGIC;
         
+        o_hcounter    : out STD_LOGIC_VECTOR(11 downto 0);
+        o_vcounter    : out STD_LOGIC_VECTOR(11 downto 0);
         o_mem_rd_en   : out STD_LOGIC;
         o_mem_rd_addr : out STD_LOGIC_VECTOR(9 downto 0);
         o_color       : out STD_LOGIC_VECTOR(23 downto 0);
@@ -68,7 +70,7 @@ architecture Behavioral of raster_plot is
     constant C_V_LOW_LIMIT : STD_LOGIC_VECTOR(11 downto 0) := C_V_UP_LIMIT + (C_MAX_ID + 1);
     
     -- Time-related signals, they update only once per display
-    signal pointer0   : STD_LOGIC_VECTOR(9 downto 0) := (others => '0');  -- pointer in the memory to the oldest timestamp
+    signal pointer0   : STD_LOGIC_VECTOR(9 downto 0);  -- pointer in the memory to the oldest timestamp
     signal current_ts : STD_LOGIC_VECTOR(31 downto 0);  -- current timestamp that updates only once per display
     
     -- Signal that converts the vertical position to the correspondant neuron ID 
@@ -93,7 +95,9 @@ begin
         
         if rising_edge(i_clk) then
             -- Black background
-            o_color <= C_BLACK;
+            o_color    <= C_BLACK;
+            o_hcounter <= i_hcounter;
+            o_vcounter <= i_vcounter;
             
             if i_rst = '0' then
                 if i_vcounter = 0 and i_hcounter = 0 then
