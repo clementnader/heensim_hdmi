@@ -31,7 +31,6 @@ library work;
 entity raster_plot is
     port (
         i_clk           : in STD_LOGIC;
-        i_rst           : in STD_LOGIC;
         i_freeze_screen : in STD_LOGIC;
         i_hcounter      : in STD_LOGIC_VECTOR(11 downto 0);
         i_vcounter      : in STD_LOGIC_VECTOR(11 downto 0);
@@ -89,6 +88,7 @@ architecture Behavioral of raster_plot is
 begin
     
     color_proc: process(i_clk)
+        
         variable shifted_hcounter : STD_LOGIC_VECTOR(11 downto 0);
         
     begin
@@ -99,84 +99,89 @@ begin
             o_hcounter <= i_hcounter;
             o_vcounter <= i_vcounter;
             
-            if i_rst = '0' then
-                if i_vcounter = 0 and i_hcounter = 0 then
-                    -- Initialization
-                    o_end_screen <= '0';
-                    if i_current_ts = 0 then
-                        pointer0   <= (others => '0');
-                        current_ts <= (others => '0');
-                    end if;
-                    mem_column_before  <= (others => '0');
-                    mem_column_current <= (others => '0');
-                    extend_vaxis   <= i_extend_vaxis;
-                    neuron_id_vcnt <= (others => '0');
-                    intermed_vcnt  <= "00";
-                    
-                elsif (i_vcounter <= C_V_UP_LIMIT or neuron_id_vcnt > C_V_LOW_LIMIT) and i_hcounter = 0 then
-                    neuron_id_vcnt <= neuron_id_vcnt + 1;
-                    
-                elsif i_vcounter > C_V_UP_LIMIT and neuron_id_vcnt <= C_V_LOW_LIMIT then
-                    if i_hcounter = 0 then
-                        if extend_vaxis = '1' then
-                            intermed_vcnt <= intermed_vcnt + 1;  -- counter from 0 to 3
-                            if intermed_vcnt = "00" then
-                                neuron_id_vcnt <= neuron_id_vcnt + 1;
-                            end if;
-                        else
+            if i_vcounter = 0 and i_hcounter = 0 then
+                -- Initialization
+                o_end_screen <= '0';
+                if i_current_ts = 0 then
+                    pointer0   <= (others => '0');
+                    current_ts <= (others => '0');
+                end if;
+                extend_vaxis   <= i_extend_vaxis;
+                neuron_id_vcnt <= (others => '0');
+                intermed_vcnt  <= "00";
+                
+            elsif (i_vcounter <= C_V_UP_LIMIT or neuron_id_vcnt > C_V_LOW_LIMIT) and i_hcounter = 0 then
+                neuron_id_vcnt <= neuron_id_vcnt + 1;
+                
+            elsif (i_vcounter = C_V_UP_LIMIT or neuron_id_vcnt = C_V_LOW_LIMIT+1)
+             and (i_hcounter >= C_H_LOW_LIMIT and i_hcounter < C_H_UP_LIMIT) then
+                o_color <= C_WHITE;
+            
+            elsif i_vcounter > C_V_UP_LIMIT and neuron_id_vcnt <= C_V_LOW_LIMIT then
+                if i_hcounter = 0 then
+                    if extend_vaxis = '1' then
+                        intermed_vcnt <= intermed_vcnt + 1;  -- counter from 0 to 3
+                        if intermed_vcnt = "00" then
                             neuron_id_vcnt <= neuron_id_vcnt + 1;
                         end if;
-                    elsif i_hcounter >= C_H_LOW_LIMIT - 4 and i_hcounter < C_H_UP_LIMIT then
-                        -- we need three time periods before reading from the memory
-                        o_mem_rd_en <= '1';
+                    else
+                        neuron_id_vcnt <= neuron_id_vcnt + 1;
+                    end if;
+                elsif i_hcounter >= C_H_LOW_LIMIT - 4 and i_hcounter < C_H_UP_LIMIT then
+                    -- we need three time periods before reading from the memory
+                    o_mem_rd_en <= '1';
+                    if i_hcounter < C_H_UP_LIMIT - 4 then
                         shifted_hcounter := i_hcounter - (C_H_LOW_LIMIT - 4);  -- from 0 to C_NB_H_POINTS-1=1023
-                        o_mem_rd_addr <= pointer0 + shifted_hcounter(pointer0'high downto 0);
+                    else
+                        shifted_hcounter := C_NB_H_POINTS - 1;
+                    end if;
+                    o_mem_rd_addr <= pointer0 + shifted_hcounter(pointer0'high downto 0);
+                    
+                    if i_hcounter = C_H_LOW_LIMIT - 1 then
+                        shifted_vcounter   <= to_integer(unsigned(C_V_LOW_LIMIT - neuron_id_vcnt));  -- from 0 to C_MAX_ID=199
+                        mem_column_before  <= (others => '0');
+                        mem_column_current <= i_mem_rd_data;
+                    
+                    elsif i_hcounter >= C_H_LOW_LIMIT then
+                        -- White background inside the plot
+                        o_color <= C_WHITE;
+                        mem_column_before  <= mem_column_current;
+                        mem_column_current <= i_mem_rd_data;
                         
-                        if i_hcounter = C_H_LOW_LIMIT - 1 then
-                            shifted_vcounter <= to_integer(unsigned(C_V_LOW_LIMIT - neuron_id_vcnt));  -- from 0 to C_MAX_ID=199
-                            mem_column_current <= i_mem_rd_data;
-                        
-                        elsif i_hcounter >= C_H_LOW_LIMIT then
-                            -- White background inside the plot
-                            o_color <= C_WHITE;
-                            mem_column_before  <= mem_column_current;
-                            mem_column_current <= i_mem_rd_data;
-                            
-                            if shifted_hcounter <= current_ts then
-                                if extend_vaxis = '1' then
-                                    if (intermed_vcnt /= "00"  -- middle, up or down points
-                                      and mem_column_current(shifted_vcounter) = '1')
-                                     or (intermed_vcnt = "10"  -- middle point
-                                      and (mem_column_before(shifted_vcounter) = '1'
-                                       or i_mem_rd_data(shifted_vcounter) = '1')) then
-                                        -- Plot dots for the corresponding spike
-                                        o_color <= C_BLUE;
-                                    end if;
-                                else
-                                    if mem_column_current(shifted_vcounter) = '1'
-                                     or (mem_column_before(shifted_vcounter) = '1'
-                                     or i_mem_rd_data(shifted_vcounter) = '1'
-                                     or (shifted_vcounter > 0        and mem_column_current(shifted_vcounter-1) = '1')
-                                     or (shifted_vcounter < C_MAX_ID and mem_column_current(shifted_vcounter+1) = '1')) then
-                                        -- Plot dots for the corresponding spike
-                                        o_color <= C_BLUE;
-                                    end if;
+                        if shifted_hcounter <= current_ts then
+                            if extend_vaxis = '1' then
+                                if (intermed_vcnt /= "00"  -- middle, up or down points
+                                  and mem_column_current(shifted_vcounter) = '1')
+                                 or (intermed_vcnt = "10"  -- middle point
+                                  and (mem_column_before(shifted_vcounter) = '1'
+                                   or i_mem_rd_data(shifted_vcounter) = '1')) then
+                                    -- Plot dots for the corresponding spike
+                                    o_color <= C_BLUE;
+                                end if;
+                            else
+                                if mem_column_current(shifted_vcounter) = '1'
+                                 or (mem_column_before(shifted_vcounter) = '1'
+                                 or i_mem_rd_data(shifted_vcounter) = '1'
+                                 or (shifted_vcounter > 0        and mem_column_current(shifted_vcounter-1) = '1')
+                                 or (shifted_vcounter < C_MAX_ID and mem_column_current(shifted_vcounter+1) = '1')) then
+                                    -- Plot dots for the corresponding spike
+                                    o_color <= C_BLUE;
                                 end if;
                             end if;
                         end if;
-                    else
-                        o_mem_rd_en <= '0';
                     end if;
-                    
-                elsif i_hcounter = C_H_VISIBLE and i_vcounter = C_V_VISIBLE then  -- end of screen
-                    if i_freeze_screen = '0' then
-                        o_end_screen <= '1';
-                        current_ts   <= i_current_ts;
-                        if i_current_ts(31 downto 10) = 0 then  -- the memory has not been written fully
-                            pointer0 <= (others => '0');
-                        else
-                            pointer0 <= i_current_ts(pointer0'high downto 0) + 1;
-                        end if;
+                else
+                    o_mem_rd_en <= '0';
+                end if;
+                
+            elsif i_hcounter = C_H_VISIBLE and i_vcounter = C_V_VISIBLE then  -- end of screen
+                if i_freeze_screen = '0' then
+                    o_end_screen <= '1';
+                    current_ts   <= i_current_ts;
+                    if i_current_ts(31 downto 10) = 0 then  -- the memory has not been written fully
+                        pointer0 <= (others => '0');
+                    else
+                        pointer0 <= i_current_ts(pointer0'high downto 0) + 1;
                     end if;
                 end if;
             end if;

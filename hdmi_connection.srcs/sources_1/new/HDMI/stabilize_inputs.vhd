@@ -53,14 +53,14 @@ architecture Behavioral of stabilize_inputs is
 begin
     
     clock_divider_inst : clock_divider
-    generic map (
-        G_NB_BITS_CLK_DIV => 22
-    )
-    port map (
-        i_clk => i_clk,
-        
-        o_div_clk => div_clk
-    );
+        generic map (
+            G_NB_BITS_CLK_DIV => 20
+        )
+        port map (
+            i_clk => i_clk,
+            
+            o_div_clk => div_clk
+        );
     
     stabilize_inputs : process(div_clk)
     begin

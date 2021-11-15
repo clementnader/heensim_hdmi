@@ -33,7 +33,7 @@ package events_list is
     constant C_LENGTH_NEURON_ID : INTEGER := C_LENGTH_CHIP_ID + C_LENGTH_VIRT + C_LENGTH_ROW + C_LENGTH_COLUMN;
     constant C_LENGTH_TIMESTAMP : INTEGER := 32;
     
-    constant C_MAX_CHIP_ID : INTEGER := 0;
+    constant C_MAX_CHIP_ID : INTEGER := 1;
     constant C_MAX_VIRT    : INTEGER := 7;
     constant C_MAX_ROW     : INTEGER := 4;
     constant C_MAX_COLUMN  : INTEGER := 4;
@@ -41,7 +41,7 @@ package events_list is
     constant C_MAX_ID : INTEGER := C_MAX_COLUMN
              + (C_MAX_COLUMN+1) * (C_MAX_ROW
              + (C_MAX_ROW+1)    * (C_MAX_VIRT
-             + (C_MAX_VIRT+1)   * (C_MAX_CHIP_ID)));
+             + (C_MAX_VIRT+1)   * (C_MAX_CHIP_ID-1)));
     
     function get_id_value(
         neuron_id : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0)
@@ -74,7 +74,7 @@ package body events_list is
         id_value := column
             + std_logic_vector(to_unsigned(C_MAX_COLUMN+1, C_LENGTH_COLUMN+1)) * (row
             + std_logic_vector(to_unsigned(C_MAX_ROW+1,    C_LENGTH_ROW+1))    * (virt
-            + std_logic_vector(to_unsigned(C_MAX_VIRT+1,   C_LENGTH_VIRT+1))   * chip_id));
+            + std_logic_vector(to_unsigned(C_MAX_VIRT+1,   C_LENGTH_VIRT+1))   * (chip_id-1)));
         return id_value(C_LENGTH_NEURON_ID-1 downto 0);
         
     end function;

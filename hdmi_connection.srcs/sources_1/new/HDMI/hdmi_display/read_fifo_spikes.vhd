@@ -50,7 +50,7 @@ end read_fifo_spikes;
 
 architecture Behavioral of read_fifo_spikes is
     
-    component blk_mem_gen_2
+    component blk_mem_gen_1
         port (
             clka  : in STD_LOGIC;
             ena   : in STD_LOGIC;
@@ -79,8 +79,6 @@ architecture Behavioral of read_fifo_spikes is
         IDLE,
         EMPTY_MEM,
         FIFO_READ,
-        WAIT_BEFORE_CHECK_VALID,
-        CHECK_VALID,
         WAIT_BEFORE_MEM_READ,
         MEM_WRITE,
         FIFO_EMPTY,
@@ -109,16 +107,16 @@ architecture Behavioral of read_fifo_spikes is
     
 begin
     
-    blk_mem_gen_2_inst : blk_mem_gen_2
-    port map (
-        clka   => i_clk,
-        ena    => buffer_en,
-        wea(0) => buffer_we,
-        addra  => buffer_addr,
-        dina   => buffer_din,
-        
-        douta => buffer_dout
-    );
+    blk_mem_gen_1_inst : blk_mem_gen_1
+        port map (
+            clka   => i_clk,
+            ena    => buffer_en,
+            wea(0) => buffer_we,
+            addra  => buffer_addr,
+            dina   => buffer_din,
+            
+            douta => buffer_dout
+        );
     
     reading_process : process(i_clk)
     begin
@@ -138,14 +136,14 @@ begin
                 buffer_cnt           <= (others => '0');
                 transfer_from_buffer <= '0';
                 current_ts           <= (others => '0');
-                fifo_rd_state <= IDLE;
+                fifo_rd_state        <= IDLE;
                 
             else
                 case fifo_rd_state is
                     
                     when IDLE =>
+                        o_hdmi_ready_rd_fifo <= '0';
                         if i_ph_dist = '1' then  -- a new distribution phase
-                            o_hdmi_ready_rd_fifo <= '0';
                             fifo_rd_state <= EMPTY_MEM;
                         end if;
                     
@@ -166,22 +164,11 @@ begin
                         o_hdmi_ready_rd_fifo <= '0';
                         buffer_en            <= '0';
                         buffer_we            <= '0';
-                        if i_fifo_empty = '0' then
-                            fifo_rd_state <= WAIT_BEFORE_CHECK_VALID;
-                        else  -- the FIFO is empty
-                            fifo_rd_state <= FIFO_EMPTY;
-                        end if;
-                    
-                    when WAIT_BEFORE_CHECK_VALID =>  -- delay of one period before checking the i_valid signal from the FIFO
-                        fifo_rd_state <= CHECK_VALID;
-                    
-                    when CHECK_VALID =>
                         if i_fifo_valid = '1' then  -- the read value is valid, it can be saved in the memory
                             neuron_id <= i_fifo_dout;
                             buffer_en <= '1';
                             fifo_rd_state <= WAIT_BEFORE_MEM_READ;
-                        else  -- we try to read again
-                            o_hdmi_ready_rd_fifo <= '1';
+                        else
                             fifo_rd_state <= FIFO_READ;
                         end if;
                     
@@ -193,8 +180,12 @@ begin
                         -- the new column has a '1' at the vertical position corresponding to the ID value
                         buffer_din           <= convert_neuron_id(id_value, buffer_dout);
                         buffer_we            <= '1';
-                        o_hdmi_ready_rd_fifo <= '1';
-                        fifo_rd_state <= FIFO_READ;
+                        if i_fifo_empty = '0' then
+                            o_hdmi_ready_rd_fifo <= '1';
+                            fifo_rd_state <= FIFO_READ;
+                        else  -- the FIFO is empty
+                            fifo_rd_state <= FIFO_EMPTY;
+                        end if;
                     
                     when FIFO_EMPTY =>
                         buffer_en   <= '0';

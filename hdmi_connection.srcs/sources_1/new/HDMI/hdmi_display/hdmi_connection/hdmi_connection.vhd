@@ -171,90 +171,90 @@ architecture Behavioral of hdmi_connection is
 begin
     
     position_counters_inst : position_counters
-    port map (
-        i_clk => i_clk,
-        i_rst => i_rst,
-        
-        o_hcounter => o_hcounter,
-        o_vcounter => o_vcounter
-    );
+        port map (
+            i_clk => i_clk,
+            i_rst => i_rst,
+            
+            o_hcounter => o_hcounter,
+            o_vcounter => o_vcounter
+        );
     
     vga_generator_inst : vga_generator
-    port map (
-        i_clk      => i_clk,
-        i_color    => i_color,
-        i_hcounter => i_hcounter,
-        i_vcounter => i_vcounter,
-        
-        o_r     => pattern_r,
-        o_g     => pattern_g,
-        o_b     => pattern_b,
-        o_de    => pattern_de,
-        o_hsync => pattern_hsync,
-        o_vsync => pattern_vsync
-    );
+        port map (
+            i_clk      => i_clk,
+            i_color    => i_color,
+            i_hcounter => i_hcounter,
+            i_vcounter => i_vcounter,
+            
+            o_r     => pattern_r,
+            o_g     => pattern_g,
+            o_b     => pattern_b,
+            o_de    => pattern_de,
+            o_hsync => pattern_hsync,
+            o_vsync => pattern_vsync
+        );
     
     convert_444_422_inst : convert_444_422
-    port map (
-        i_clk   => i_clk,
-        i_r     => pattern_r,
-        i_g     => pattern_g,
-        i_b     => pattern_b,
-        i_de    => pattern_de,
-        i_hsync => pattern_hsync,
-        i_vsync => pattern_vsync,
-        
-        o_r1         => c422_r1,
-        o_g1         => c422_g1,
-        o_b1         => c422_b1,
-        o_r2         => c422_r2,
-        o_g2         => c422_g2,
-        o_b2         => c422_b2,
-        o_pair_start => c422_pair_start,
-        o_de         => c422_de,
-        o_hsync      => c422_hsync,
-        o_vsync      => c422_vsync
-    );
+        port map (
+            i_clk   => i_clk,
+            i_r     => pattern_r,
+            i_g     => pattern_g,
+            i_b     => pattern_b,
+            i_de    => pattern_de,
+            i_hsync => pattern_hsync,
+            i_vsync => pattern_vsync,
+            
+            o_r1         => c422_r1,
+            o_g1         => c422_g1,
+            o_b1         => c422_b1,
+            o_r2         => c422_r2,
+            o_g2         => c422_g2,
+            o_b2         => c422_b2,
+            o_pair_start => c422_pair_start,
+            o_de         => c422_de,
+            o_hsync      => c422_hsync,
+            o_vsync      => c422_vsync
+        );
     
     color_space_conversion_inst : color_space_conversion
-    port map (
-        i_clk        => i_clk,
-        i_r1         => c422_r1,
-        i_g1         => c422_g1,
-        i_b1         => c422_b1,
-        i_r2         => c422_r2,
-        i_g2         => c422_g2,
-        i_b2         => c422_b2,
-        i_pair_start => c422_pair_start,
-        i_de         => c422_de,
-        i_hsync      => c422_hsync,
-        i_vsync      => c422_vsync,
+        port map (
+            i_clk        => i_clk,
+            i_r1         => c422_r1,
+            i_g1         => c422_g1,
+            i_b1         => c422_b1,
+            i_r2         => c422_r2,
+            i_g2         => c422_g2,
+            i_b2         => c422_b2,
+            i_pair_start => c422_pair_start,
+            i_de         => c422_de,
+            i_hsync      => c422_hsync,
+            i_vsync      => c422_vsync,
+            
+            o_y     => csc_y,
+            o_c     => csc_c,
+            o_de    => csc_de,
+            o_hsync => csc_hsync,
+            o_vsync => csc_vsync
+        );
         
-        o_y     => csc_y,
-        o_c     => csc_c,
-        o_de    => csc_de,
-        o_hsync => csc_hsync,
-        o_vsync => csc_vsync
-    );
-    
-    hdmi_ddr_output_inst : hdmi_ddr_output
-    port map (
-        i_clk   => i_clk,
-        i_clk90 => i_clk90,
-        i_rst   => i_rst,
-        i_y     => csc_y,
-        i_c     => csc_c,
-        i_de    => csc_de,
-        i_hsync => csc_hsync,
-        i_vsync => csc_vsync,
-        
-        o_hdmi_clk   => o_hdmi_clk,
-        o_hdmi_d     => o_hdmi_d,
-        o_hdmi_de    => o_hdmi_de,
-        o_hdmi_hsync => o_hdmi_hsync,
-        o_hdmi_vsync => o_hdmi_vsync,
-        o_hdmi_scl   => o_hdmi_scl,
-        o_hdmi_sda   => o_hdmi_sda
-    );
+        hdmi_ddr_output_inst : hdmi_ddr_output
+        port map (
+            i_clk   => i_clk,
+            i_clk90 => i_clk90,
+            i_rst   => i_rst,
+            i_y     => csc_y,
+            i_c     => csc_c,
+            i_de    => csc_de,
+            i_hsync => csc_hsync,
+            i_vsync => csc_vsync,
+            
+            o_hdmi_clk   => o_hdmi_clk,
+            o_hdmi_d     => o_hdmi_d,
+            o_hdmi_de    => o_hdmi_de,
+            o_hdmi_hsync => o_hdmi_hsync,
+            o_hdmi_vsync => o_hdmi_vsync,
+            o_hdmi_scl   => o_hdmi_scl,
+            o_hdmi_sda   => o_hdmi_sda
+        );
     
 end Behavioral;

@@ -47,6 +47,8 @@ architecture Behavioral of get_current_timestamp is
     
 begin
     
+    o_current_ts <= current_ts;
+    
     process(i_clk)
     begin
         if rising_edge(i_clk) then
@@ -68,7 +70,5 @@ begin
             
         end if;
     end process;
-    
-    o_current_ts <= current_ts;
     
 end Behavioral;

@@ -62,54 +62,54 @@ begin
     end process;
     
     ODDR_inst_hdmi_clk : ODDR
-    generic map (
-        DDR_CLK_EDGE => "SAME_EDGE",
-        INIT         => '0',
-        SRTYPE       => "SYNC"
-    )
-    port map (
-        C  => i_clk90,
-        Q  => o_hdmi_clk,
-        D1 => '1',
-        D2 => '0',
-        CE => '1',
-        R  => '0',
-        S  => '0'
-    );
-    
-    ODDR_inst_hdmi_de : ODDR
-    generic map (
-        DDR_CLK_EDGE => "SAME_EDGE",
-        INIT         => '0',
-        SRTYPE       => "SYNC"
-    ) 
-    port map (
-        C  => i_clk,
-        Q  => o_hdmi_de,
-        D1 => i_de,
-        D2 => i_de,
-        CE => '1',
-        R  => '0',
-        S  => '0'
-    );
-    
-    ODDR_gen_hdmi_d : for i in 0 to 7 generate
-    begin
-        ODDR_inst_hdmi_d : ODDR
         generic map (
             DDR_CLK_EDGE => "SAME_EDGE",
             INIT         => '0',
             SRTYPE       => "SYNC"
         )
         port map (
-            C  => i_clk,
-            Q  => o_hdmi_d(8+i),
-            D1 => i_y(i),
-            D2 => i_c(i),
+            C  => i_clk90,
+            Q  => o_hdmi_clk,
+            D1 => '1',
+            D2 => '0',
             CE => '1',
             R  => '0',
             S  => '0'
         );
+    
+    ODDR_inst_hdmi_de : ODDR
+        generic map (
+            DDR_CLK_EDGE => "SAME_EDGE",
+            INIT         => '0',
+            SRTYPE       => "SYNC"
+        ) 
+        port map (
+            C  => i_clk,
+            Q  => o_hdmi_de,
+            D1 => i_de,
+            D2 => i_de,
+            CE => '1',
+            R  => '0',
+            S  => '0'
+        );
+    
+    ODDR_gen_hdmi_d : for i in 0 to 7 generate
+    begin
+        ODDR_inst_hdmi_d : ODDR
+            generic map (
+                DDR_CLK_EDGE => "SAME_EDGE",
+                INIT         => '0',
+                SRTYPE       => "SYNC"
+            )
+            port map (
+                C  => i_clk,
+                Q  => o_hdmi_d(8+i),
+                D1 => i_y(i),
+                D2 => i_c(i),
+                CE => '1',
+                R  => '0',
+                S  => '0'
+            );
     end generate;
     
     o_hdmi_d(7 downto 0) <= "00000000";
@@ -118,12 +118,12 @@ begin
     -- This sends the configuration register values to the HDMI transmitter
     -----------------------------------------------------------------------   
     i2c_sender_inst : i2c_sender
-    port map (
-        i_clk => i_clk,
-        i_rst => i_rst,
-        
-        o_sioc => o_hdmi_scl,
-        o_siod => o_hdmi_sda
-    );
+        port map (
+            i_clk => i_clk,
+            i_rst => i_rst,
+            
+            o_sioc => o_hdmi_scl,
+            o_siod => o_hdmi_sda
+        );
     
 end Behavioral;

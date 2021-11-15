@@ -27,7 +27,7 @@ end i2c_sender;
 
 architecture Behavioral of i2c_sender is
     
-    constant C_I2C_WR_ADDR   : STD_LOGIC_VECTOR( 7 downto 0) := x"72";
+    constant C_I2C_WR_ADDR : STD_LOGIC_VECTOR(7 downto 0) := x"72";
     
     type T_REG_VALUE_PAIR is array(0 to 63) of STD_LOGIC_VECTOR(15 downto 0);    
     
