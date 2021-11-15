@@ -72,8 +72,10 @@ architecture Behavioral of raster_plot is
     signal pointer0   : STD_LOGIC_VECTOR(9 downto 0);  -- pointer in the memory to the oldest timestamp
     signal current_ts : STD_LOGIC_VECTOR(31 downto 0);  -- current timestamp that updates only once per display
     
-    -- Signal that converts the vertical position to the correspondant neuron ID 
-    signal shifted_vcounter : INTEGER range 0 to C_MAX_ID;
+    -- Signal that converts the horizontal position to the correspondant timestamp
+    signal shifted_hcounter : STD_LOGIC_VECTOR(11 downto 0);
+    -- Signal that converts the vertical position to the correspondant neuron ID
+    signal shifted_vcounter : INTEGER range 0 to C_MAX_ID+1;
     
     -- Signals to extend vertical axis by a factor of 4
     signal extend_vaxis   : STD_LOGIC;
@@ -88,9 +90,6 @@ architecture Behavioral of raster_plot is
 begin
     
     color_proc: process(i_clk)
-        
-        variable shifted_hcounter : STD_LOGIC_VECTOR(11 downto 0);
-        
     begin
         
         if rising_edge(i_clk) then
@@ -103,16 +102,17 @@ begin
                 -- Initialization
                 o_end_screen <= '0';
                 if i_current_ts = 0 then
-                    pointer0   <= (others => '0');
                     current_ts <= (others => '0');
+                    pointer0   <= (others => '0');
                 end if;
-                extend_vaxis   <= i_extend_vaxis;
-                neuron_id_vcnt <= (others => '0');
-                intermed_vcnt  <= "00";
-                
+                extend_vaxis     <= i_extend_vaxis;
+                neuron_id_vcnt   <= (others => '0');
+                shifted_vcounter <= C_MAX_ID + 1;
+                intermed_vcnt    <= (others => '0');
+            
             elsif (i_vcounter <= C_V_UP_LIMIT or neuron_id_vcnt > C_V_LOW_LIMIT) and i_hcounter = 0 then
                 neuron_id_vcnt <= neuron_id_vcnt + 1;
-                
+            
             elsif (i_vcounter = C_V_UP_LIMIT or neuron_id_vcnt = C_V_LOW_LIMIT+1)
              and (i_hcounter >= C_H_LOW_LIMIT and i_hcounter < C_H_UP_LIMIT) then
                 o_color <= C_WHITE;
@@ -122,23 +122,27 @@ begin
                     if extend_vaxis = '1' then
                         intermed_vcnt <= intermed_vcnt + 1;  -- counter from 0 to 3
                         if intermed_vcnt = "00" then
-                            neuron_id_vcnt <= neuron_id_vcnt + 1;
+                            neuron_id_vcnt   <= neuron_id_vcnt + 1;
+                            shifted_vcounter <= shifted_vcounter - 1;  -- from C_MAX_ID=199 downto 0
                         end if;
                     else
-                        neuron_id_vcnt <= neuron_id_vcnt + 1;
+                        neuron_id_vcnt   <= neuron_id_vcnt + 1;
+                        shifted_vcounter <= shifted_vcounter - 1;  -- from C_MAX_ID=199 downto 0
                     end if;
+                elsif i_hcounter = C_H_LOW_LIMIT - 5 then
+                    shifted_hcounter <= (others => '0');
                 elsif i_hcounter >= C_H_LOW_LIMIT - 4 and i_hcounter < C_H_UP_LIMIT then
                     -- we need three time periods before reading from the memory
-                    o_mem_rd_en <= '1';
-                    if i_hcounter < C_H_UP_LIMIT - 4 then
-                        shifted_hcounter := i_hcounter - (C_H_LOW_LIMIT - 4);  -- from 0 to C_NB_H_POINTS-1=1023
-                    else
-                        shifted_hcounter := C_NB_H_POINTS - 1;
-                    end if;
+                    o_mem_rd_en   <= '1';
                     o_mem_rd_addr <= pointer0 + shifted_hcounter(pointer0'high downto 0);
                     
+                    if shifted_hcounter < C_NB_H_POINTS - 1 then
+                        shifted_hcounter <= shifted_hcounter + 1;
+                    else
+                        shifted_hcounter <= C_NB_H_POINTS - 1;
+                    end if;
+                    
                     if i_hcounter = C_H_LOW_LIMIT - 1 then
-                        shifted_vcounter   <= to_integer(unsigned(C_V_LOW_LIMIT - neuron_id_vcnt));  -- from 0 to C_MAX_ID=199
                         mem_column_before  <= (others => '0');
                         mem_column_current <= i_mem_rd_data;
                     

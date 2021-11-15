@@ -56,4 +56,3 @@ set_property IOSTANDARD LVCMOS33 [get_ports -of_objects [get_iobanks 13]];
 
 set_property IOSTANDARD LVCMOS33 [get_ports -of_objects [get_iobanks 33]];
 set_property IOSTANDARD LVCMOS18 [get_ports -of_objects [get_iobanks 34]];
-set_property IOSTANDARD LVCMOS18 [get_ports -of_objects [get_iobanks 35]];
