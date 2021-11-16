@@ -43,7 +43,8 @@ entity read_fifo_spikes is
         o_mem_wr_en          : out STD_LOGIC;
         o_mem_wr_we          : out STD_LOGIC;
         o_mem_wr_addr        : out STD_LOGIC_VECTOR(9 downto 0);
-        o_mem_wr_din         : out STD_LOGIC_VECTOR(C_MAX_ID downto 0)
+        o_mem_wr_din         : out STD_LOGIC_VECTOR(C_MAX_ID downto 0);
+        o_transfer_done      : out STD_LOGIC
     );
 end read_fifo_spikes;
 
@@ -99,11 +100,10 @@ architecture Behavioral of read_fifo_spikes is
     
     signal buffer_cnt : STD_LOGIC_VECTOR(4 downto 0) := (others => '0');
     
+    signal last_end_screen      : STD_LOGIC;
     signal transfer_from_buffer : STD_LOGIC;
     signal transfer_addr        : STD_LOGIC_VECTOR(9 downto 0);
     signal transfer_rd_delay    : STD_LOGIC;
-    
-    signal last_end_screen : STD_LOGIC;
     
 begin
     
@@ -143,6 +143,7 @@ begin
                     
                     when IDLE =>
                         o_hdmi_ready_rd_fifo <= '0';
+                        o_transfer_done      <= '0';
                         if i_ph_dist = '1' then  -- a new distribution phase
                             fifo_rd_state <= EMPTY_MEM;
                         end if;
@@ -154,21 +155,21 @@ begin
                         buffer_din  <= C_BLANK_MEMORY;
                         buffer_cnt  <= buffer_cnt + 1;
                         if i_fifo_empty = '0' then
-                            o_hdmi_ready_rd_fifo <= '1';
                             fifo_rd_state <= FIFO_READ;  -- try to read from the FIFO
                         else
                             fifo_rd_state <= FIFO_EMPTY;
                         end if;
                     
                     when FIFO_READ =>
-                        o_hdmi_ready_rd_fifo <= '0';
-                        buffer_en            <= '0';
-                        buffer_we            <= '0';
+                        buffer_en <= '0';
+                        buffer_we <= '0';
                         if i_fifo_valid = '1' then  -- the read value is valid, it can be saved in the memory
-                            neuron_id <= i_fifo_dout;
-                            buffer_en <= '1';
+                            o_hdmi_ready_rd_fifo <= '0';
+                            neuron_id            <= i_fifo_dout;
+                            buffer_en            <= '1';
                             fifo_rd_state <= WAIT_BEFORE_MEM_READ;
                         else
+                            o_hdmi_ready_rd_fifo <= '1';
                             fifo_rd_state <= FIFO_READ;
                         end if;
                     
@@ -178,10 +179,9 @@ begin
                     
                     when MEM_WRITE =>  -- write the new vertical array, and return to read the FIFO again
                         -- the new column has a '1' at the vertical position corresponding to the ID value
-                        buffer_din           <= convert_neuron_id(id_value, buffer_dout);
-                        buffer_we            <= '1';
+                        buffer_din <= convert_neuron_id(id_value, buffer_dout);
+                        buffer_we  <= '1';
                         if i_fifo_empty = '0' then
-                            o_hdmi_ready_rd_fifo <= '1';
                             fifo_rd_state <= FIFO_READ;
                         else  -- the FIFO is empty
                             fifo_rd_state <= FIFO_EMPTY;
@@ -193,7 +193,6 @@ begin
                         o_mem_wr_en <= '0';
                         o_mem_wr_we <= '0';
                         if i_fifo_empty = '0' then
-                            o_hdmi_ready_rd_fifo <= '1';
                             fifo_rd_state <= FIFO_READ;
                         elsif transfer_from_buffer = '1' then
                             transfer_from_buffer <= '0';
@@ -225,6 +224,7 @@ begin
                             transfer_addr <= transfer_addr + 1;
                         else
                             buffer_cnt <= (others => '0');
+                            o_transfer_done <= '1';
                             fifo_rd_state <= FIFO_EMPTY;
                         end if;
                     

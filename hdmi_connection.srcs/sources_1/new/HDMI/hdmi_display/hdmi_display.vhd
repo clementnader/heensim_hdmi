@@ -106,7 +106,8 @@ architecture Behavioral of hdmi_display is
             o_mem_wr_en          : out STD_LOGIC;
             o_mem_wr_we          : out STD_LOGIC;
             o_mem_wr_addr        : out STD_LOGIC_VECTOR(9 downto 0);
-            o_mem_wr_din         : out STD_LOGIC_VECTOR(C_MAX_ID downto 0)
+            o_mem_wr_din         : out STD_LOGIC_VECTOR(C_MAX_ID downto 0);
+            o_transfer_done      : out STD_LOGIC
         );
     end component;
     
@@ -148,6 +149,7 @@ architecture Behavioral of hdmi_display is
             i_mem_rd_data   : in STD_LOGIC_VECTOR(C_MAX_ID downto 0);  -- 199 downto 0
             i_current_ts    : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
             i_extend_vaxis  : in STD_LOGIC;
+            i_transfer_done : in STD_LOGIC;
             
             o_hcounter    : out STD_LOGIC_VECTOR(11 downto 0);
             o_vcounter    : out STD_LOGIC_VECTOR(11 downto 0);
@@ -208,6 +210,10 @@ architecture Behavioral of hdmi_display is
     signal mem_rd_addr : STD_LOGIC_VECTOR(9 downto 0);
     signal mem_rd_data : STD_LOGIC_VECTOR(C_MAX_ID downto 0);
     
+    -- Signals from the spikes FIFO reading state machine
+    signal sp_fsm_transfer_done     : STD_LOGIC;
+    signal sp_fsm_transfer_done_150 : STD_LOGIC;
+    
     -- Signals from the plot generator
     signal color_hcounter      : STD_LOGIC_VECTOR(11 downto 0);
     signal color_vcounter      : STD_LOGIC_VECTOR(11 downto 0);
@@ -248,7 +254,7 @@ begin
     
     synchronize_bits_inst_150 : synchronize_bits
         generic map (
-            G_NB_INPUTS => 4
+            G_NB_INPUTS => 5
         )
         port map (
             i_src_clk  => i_clk,
@@ -256,12 +262,14 @@ begin
             i_src(1)   => ff_extend_vaxis,
             i_src(2)   => i_ph_dist,
             i_src(3)   => i_rst,
+            i_src(4)   => sp_fsm_transfer_done,
             
             i_dest_clk => i_clk_150,
             o_dest(0)  => freeze_screen_150,
             o_dest(1)  => extend_vaxis_150,
             o_dest(2)  => ph_dist_150,
-            o_dest(3)  => rst_150
+            o_dest(3)  => rst_150,
+            o_dest(4)  => sp_fsm_transfer_done_150
         );
     
     synchronize_bits_inst : synchronize_bits
@@ -291,7 +299,8 @@ begin
             o_mem_wr_en          => mem_wr_en,
             o_mem_wr_we          => mem_wr_we,
             o_mem_wr_addr        => mem_wr_addr,
-            o_mem_wr_din         => mem_wr_din
+            o_mem_wr_din         => mem_wr_din,
+            o_transfer_done      => sp_fsm_transfer_done
         );
     
     blk_mem_gen_0_inst : blk_mem_gen_0
@@ -330,6 +339,7 @@ begin
             i_mem_rd_data   => mem_rd_data,
             i_current_ts    => current_ts,
             i_extend_vaxis  => extend_vaxis_150,
+            i_transfer_done => sp_fsm_transfer_done_150,
             
             o_hcounter    => plot_hcounter,
             o_vcounter    => plot_vcounter,
