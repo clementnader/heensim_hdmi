@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------------------
--- Company: UPC
--- Engineer: Clément NADER
+-- Company: 
+-- Engineer: 
 -- 
 -- Create Date: 09/30/2021 02:14:56 PM
 -- Package Name: hdmi_resolution
@@ -52,7 +52,7 @@ package hdmi_resolution is
             VSyncPolarity  : STD_LOGIC;  -- Vertical Sync Polarity
         end record;
     
-    type T_HDMI_RES_VIDEO_TIMING_VEC is array(natural range <>) of T_HDMI_RES_VIDEO_TIMING;
+    type T_HDMI_RES_VIDEO_TIMING_VEC is ARRAY(NATURAL range <>) of T_HDMI_RES_VIDEO_TIMING;
     
     constant C_HDMI_RES_VTIMING_RESOLUTIONS : T_HDMI_RES_VIDEO_TIMING_VEC := (
         --    name,                     hav,  hfp,  hsw,  hbp,  hsp,  vav,  vfp,  vsw,  vbp,  vsp
@@ -61,11 +61,15 @@ package hdmi_resolution is
         2 => (HDMI_RES_1680x1050_60_P, 1680,  104,  184,  288,  '0', 1050,    1,    3,   33,  '1')
     );
     
+    ------------------------------------------
+    
     function hdmi_res_get_resolution(
         res_name : T_HDMI_RES_NAME
     ) return T_HDMI_RES_VIDEO_TIMING;
     
     constant C_VIDEO_TIMING : T_HDMI_RES_VIDEO_TIMING := hdmi_res_get_resolution(C_RES_NAME);
+    
+    ------------------------------------------
     
     constant C_ZERO : STD_LOGIC_VECTOR(11 downto 0) := (others => '0');
     
@@ -81,9 +85,13 @@ package hdmi_resolution is
     constant C_V_MAX         : STD_LOGIC_VECTOR(11 downto 0) := C_V_END_SYNC   + C_VIDEO_TIMING.VBackPorch;
     constant C_V_SYNC_ACTIVE : STD_LOGIC                     := C_VIDEO_TIMING.VSyncPolarity;
     
+    ------------------------------------------
+    
     constant C_NB_H_POINTS : STD_LOGIC_VECTOR(11 downto 0) := x"400";  -- 1024
     constant C_H_OFFSET    : STD_LOGIC_VECTOR(11 downto 0) := '0' & (C_H_VISIBLE(11 downto 1) - C_NB_H_POINTS(11 downto 1));  -- (C_H_VISIBLE - C_NB_H_POINTS) / 2
     constant C_V_OFFSET    : STD_LOGIC_VECTOR(11 downto 0) := x"040";  -- 64
+    
+    ------------------------------------------
     
     constant C_H_PLOT : STD_LOGIC_VECTOR(11 downto 0) := C_H_VISIBLE - C_H_OFFSET-C_H_OFFSET;
     constant C_V_PLOT : STD_LOGIC_VECTOR(11 downto 0) := C_V_VISIBLE - C_V_OFFSET-C_V_OFFSET;
@@ -93,15 +101,15 @@ end package;
 
 package body hdmi_resolution is
     
-    function hdmi_res_get_resolution(
+    function hdmi_res_get_resolution (
         res_name : T_HDMI_RES_NAME
     ) return T_HDMI_RES_VIDEO_TIMING is
-    begin
-        for i in C_HDMI_RES_VTIMING_RESOLUTIONS'range loop
-            next when (res_name /= C_HDMI_RES_VTIMING_RESOLUTIONS(i).ResolutionName);
-            return C_HDMI_RES_VTIMING_RESOLUTIONS(i);
-        end loop;
-        return C_HDMI_RES_VTIMING_RESOLUTIONS(1);  -- default value HDMI_RES_1920x1080_60_P
+        begin
+            for i in C_HDMI_RES_VTIMING_RESOLUTIONS'range loop
+                next when (res_name /= C_HDMI_RES_VTIMING_RESOLUTIONS(i).ResolutionName);
+                return C_HDMI_RES_VTIMING_RESOLUTIONS(i);
+            end loop;
+            return C_HDMI_RES_VTIMING_RESOLUTIONS(1);  -- default value HDMI_RES_1920x1080_60_P
     end function;
     
 end package body;
