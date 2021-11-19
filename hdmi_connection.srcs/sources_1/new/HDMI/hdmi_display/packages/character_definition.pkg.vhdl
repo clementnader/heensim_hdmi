@@ -33,7 +33,7 @@ package character_definition is
     
     constant C_ARRAY_SIZE : INTEGER := C_ASCII_CODE_RANGE * C_FONT_HEIGHT;
     
-    type T_CHAR_TABLE is array (0 to C_ARRAY_SIZE-1) of STD_LOGIC_VECTOR(C_FONT_WIDTH-1 downto 0);
+    type T_CHAR_TABLE is ARRAY (0 to C_ARRAY_SIZE-1) of STD_LOGIC_VECTOR(C_FONT_WIDTH-1 downto 0);
     
     -- ROM definition
     constant C_CHARACTERS_TABLE : T_CHAR_TABLE := (

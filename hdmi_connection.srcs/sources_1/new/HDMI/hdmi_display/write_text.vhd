@@ -4,7 +4,7 @@
 -- 
 -- Create Date: 11/18/2021 03:37:31 PM
 -- Design Name: 
--- Module Name: pixel_on_text - Behavioral
+-- Module Name: write_text - Behavioral
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 
@@ -27,7 +27,7 @@ library work;
     use work.character_definition.ALL;
 
 
-entity pixel_on_text is
+entity write_text is
     generic (
        G_TEXT_LENGTH : INTEGER
     );
@@ -41,47 +41,51 @@ entity pixel_on_text is
         
         o_pixel : out STD_LOGIC
     );
-end pixel_on_text;
+end write_text;
 
-architecture Behavioral of pixel_on_text is
-    
-    signal fontAddress : INTEGER range 0 to C_ARRAY_SIZE-1;
-    
-    -- A row of bits in a character, we check if our current (x,y) is 1 in char row
-    signal charBitInRow : STD_LOGIC_VECTOR(C_FONT_WIDTH-1 downto 0);
-    
-    signal charCode     : INTEGER range 0 to C_ASCII_CODE_RANGE-1;  -- character ASCII code
+architecture Behavioral of write_text is
     
     signal shifted_hpos : STD_LOGIC_VECTOR(11 downto 0);
-    signal charPosition : STD_LOGIC_VECTOR(11 downto C_FONT_WIDTH_POW);   -- the position(column) of a character in the given text
-    signal bitPosition  : STD_LOGIC_VECTOR(C_FONT_WIDTH_POW-1 downto 0);  -- the bit position(column) in a character
+    signal shifted_vpos : STD_LOGIC_VECTOR(11 downto 0);
+    
+    signal char_pos_in_text : STD_LOGIC_VECTOR(11 downto C_FONT_WIDTH_POW);   -- the position of a character in the given text
+    signal col_pos_in_char  : STD_LOGIC_VECTOR(C_FONT_WIDTH_POW-1 downto 0);  -- the column position in a character
+    signal char_code        : INTEGER range 0 to C_ASCII_CODE_RANGE-1;        -- character ASCII code
+    
+    signal row_addr_in_table : INTEGER range 0 to C_ARRAY_SIZE-1;
+    signal current_char_row  : STD_LOGIC_VECTOR(C_FONT_WIDTH-1 downto 0);  -- a row of bits in a character, we check if our current (h, v) is 1 in char row
     
 begin
+    
     shifted_hpos <= i_hcounter - i_text_hpos;
-    charPosition <= shifted_hpos(11 downto C_FONT_WIDTH_POW);
-    bitPosition  <= shifted_hpos(C_FONT_WIDTH_POW-1 downto 0);
+    shifted_vpos <= i_vcounter - i_text_vpos;
     
-    charCode <= character'pos(i_display_text(to_integer(unsigned(charPosition))));
+    char_pos_in_text <= shifted_hpos(11 downto C_FONT_WIDTH_POW);
+    col_pos_in_char  <= shifted_hpos(C_FONT_WIDTH_POW-1 downto 0);
+    char_code        <= character'pos(i_display_text(to_integer(unsigned(char_pos_in_text))));  -- gives the ASCII code of the character
     
-    fontAddress <= charCode*16 + to_integer(unsigned(i_vcounter - i_text_vpos));
+    row_addr_in_table <= char_code*C_FONT_HEIGHT + to_integer(unsigned(shifted_vpos));
     
-    fontRom : process(i_clk)
+    read_char_row_from_table_proc : process(i_clk)
     begin
         if rising_edge(i_clk) then
-            charBitInRow <= C_CHARACTERS_TABLE(fontAddress);
+            
+            current_char_row <= C_CHARACTERS_TABLE(row_addr_in_table);
+            
         end if;
     end process;
     
-    pixelOn: process(i_clk)
+    check_if_the_current_pixel_has_to_be_on_proc : process(i_clk)
     begin
         if rising_edge(i_clk) then
             
             o_pixel <= '0';
             
-            if (i_hcounter >= i_text_hpos and i_hcounter < i_text_hpos + (C_FONT_WIDTH * G_TEXT_LENGTH)) 
+            if (i_hcounter >= i_text_hpos and i_hcounter < i_text_hpos + (C_FONT_WIDTH * G_TEXT_LENGTH))
              and (i_vcounter >= i_text_vpos and i_vcounter < i_text_vpos + C_FONT_HEIGHT) then
-                -- C_FONT_WIDTH-bitPosition: we are reverting the character
-                if charBitInRow(C_FONT_WIDTH-to_integer(unsigned(bitPosition))) = '1' then
+                
+                -- the character needs to be reverted
+                if current_char_row(C_FONT_WIDTH - to_integer(unsigned(col_pos_in_char))) = '1' then
                     o_pixel <= '1';
                 end if;
                 
@@ -89,7 +93,5 @@ begin
             
         end if;
     end process;
-    
-    
     
 end Behavioral;
