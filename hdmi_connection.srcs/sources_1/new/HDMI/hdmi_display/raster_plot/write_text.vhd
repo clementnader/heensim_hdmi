@@ -24,7 +24,7 @@ library IEEE;
     use IEEE.NUMERIC_STD.ALL;
 
 library work;
-    use work.character_definition.ALL;
+    use work.character_definition_pkg.ALL;
 
 
 entity write_text is
@@ -33,7 +33,7 @@ entity write_text is
     );
     port (
         i_clk          : in STD_LOGIC;
-        i_display_text : in STRING(0 to G_TEXT_LENGTH-1);
+        i_display_text : in STRING(1 to G_TEXT_LENGTH);
         i_text_hpos    : in STD_LOGIC_VECTOR(11 downto 0);  -- horizontal position of the top left corner of the text
         i_text_vpos    : in STD_LOGIC_VECTOR(11 downto 0);  -- vertical position of the top left corner of the text
         i_hcounter     : in STD_LOGIC_VECTOR(11 downto 0);  -- current pixel horizontal position
@@ -50,9 +50,9 @@ architecture Behavioral of write_text is
     
     signal char_pos_in_text : STD_LOGIC_VECTOR(11 downto C_FONT_WIDTH_POW);   -- the position of a character in the given text
     signal col_pos_in_char  : STD_LOGIC_VECTOR(C_FONT_WIDTH_POW-1 downto 0);  -- the column position in a character
-    signal char_code        : INTEGER range 0 to C_ASCII_CODE_RANGE-1;        -- character ASCII code
+    signal char_code        : STD_LOGIC_VECTOR(6 downto 0);                   -- character ASCII code
     
-    signal row_addr_in_table : INTEGER range 0 to C_ARRAY_SIZE-1;
+    signal row_addr_in_table : STD_LOGIC_VECTOR(10 downto 0);
     signal current_char_row  : STD_LOGIC_VECTOR(C_FONT_WIDTH-1 downto 0);  -- a row of bits in a character, we check if our current (h, v) is 1 in char row
     
 begin
@@ -62,15 +62,26 @@ begin
     
     char_pos_in_text <= shifted_hpos(11 downto C_FONT_WIDTH_POW);
     col_pos_in_char  <= shifted_hpos(C_FONT_WIDTH_POW-1 downto 0);
-    char_code        <= character'pos(i_display_text(to_integer(unsigned(char_pos_in_text))));  -- gives the ASCII code of the character
     
-    row_addr_in_table <= char_code*C_FONT_HEIGHT + to_integer(unsigned(shifted_vpos));
+    char_code <= std_logic_vector(to_unsigned(
+        character'pos(  -- gives the ASCII code of a character
+            i_display_text(1 + to_integer(unsigned(char_pos_in_text)))
+        ), 7));
+    
+--    char_code <= std_logic_vector(to_unsigned(
+--        character'pos(  -- gives the ASCII code of a character
+--            i_display_text(1 + to_integer(unsigned(char_pos_in_text)))
+--        ), 7)) when 1 + to_integer(unsigned(char_pos_in_text)) >= 1
+--                and 1 + to_integer(unsigned(char_pos_in_text)) <= G_TEXT_LENGTH
+--        else (others => 'Z');
+    
+    row_addr_in_table <= char_code & shifted_vpos(3 downto 0);
     
     read_char_row_from_table_proc : process(i_clk)
     begin
         if rising_edge(i_clk) then
             
-            current_char_row <= C_CHARACTERS_TABLE(row_addr_in_table);
+            current_char_row <= C_CHARACTERS_TABLE(to_integer(unsigned(row_addr_in_table)));
             
         end if;
     end process;
@@ -84,10 +95,12 @@ begin
             if (i_hcounter >= i_text_hpos and i_hcounter < i_text_hpos + (C_FONT_WIDTH * G_TEXT_LENGTH))
              and (i_vcounter >= i_text_vpos and i_vcounter < i_text_vpos + C_FONT_HEIGHT) then
                 
-                -- the character needs to be reverted
+--                if C_FONT_WIDTH - to_integer(unsigned(col_pos_in_char)) >= 0
+--                 and C_FONT_WIDTH - to_integer(unsigned(col_pos_in_char)) <= C_FONT_WIDTH-1 then
                 if current_char_row(C_FONT_WIDTH - to_integer(unsigned(col_pos_in_char))) = '1' then
                     o_pixel <= '1';
                 end if;
+--                end if;
                 
             end if;
             

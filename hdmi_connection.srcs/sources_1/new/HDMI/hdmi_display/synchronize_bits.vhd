@@ -30,8 +30,8 @@ entity synchronize_bits is
         G_NB_INPUTS : INTEGER := 1
     );
     port (
-        i_src_clk  : in STD_LOGIC;
-        i_src      : in STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0);
+        i_src_clk : in STD_LOGIC;
+        i_src     : in STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0);
         
         i_dest_clk : in STD_LOGIC;
         o_dest     : out STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0)

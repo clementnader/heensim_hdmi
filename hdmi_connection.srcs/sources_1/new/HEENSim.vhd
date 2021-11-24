@@ -85,14 +85,14 @@ architecture Behavioral of HEENSim is
     signal phase_state : T_PHASESTATE_FSM := INIT_PHASE;
     
     -- BRAM
-    signal mem_en   : STD_LOGIC;
-    signal mem_addr : STD_LOGIC_VECTOR(10 downto 0);
+    signal mem_en   : STD_LOGIC :=  '0';
+    signal mem_addr : STD_LOGIC_VECTOR(10 downto 0) := (others => '0');
     signal mem_dout : STD_LOGIC_VECTOR(17 downto 0);
     
     -- FIFO
-    signal fifo_wr_en : STD_LOGIC;
+    signal fifo_wr_en : STD_LOGIC :=  '0';
     signal fifo_din   : STD_LOGIC_VECTOR(17 downto 0);
-    signal fifo_rd_en : STD_LOGIC;
+    signal fifo_rd_en : STD_LOGIC :=  '0';
     signal fifo_empty : STD_LOGIC;
     signal fifo_valid : STD_LOGIC;
     signal fifo_dout  : STD_LOGIC_VECTOR(17 downto 0);
@@ -149,8 +149,6 @@ begin
                 fifo_rd_en   <= '0';
                 mem_en       <= '0';
                 mem_addr     <= (others => '0');
-                count        <= (others => '0');
-                period_count <= (others => '0');
                 phase_state  <= INIT_PHASE;
             
             else
@@ -174,9 +172,6 @@ begin
                         if count < G_DATA_SIZE + 1 then
                             mem_en      <= '1';
                             fifo_wr_en  <= '0';
-                            if count > 0 then
-                                fifo_din <= mem_dout;
-                            end if;
                             phase_state <= EXEC_WRITE;
                         else
                             fifo_wr_en  <= '0';
@@ -187,6 +182,7 @@ begin
                     when EXEC_WRITE =>
                         period_count <= period_count + 1;
                         if count > 0 then
+                            fifo_din   <= mem_dout;
                             fifo_wr_en <= '1';
                         end if;
                         if count < G_DATA_SIZE then

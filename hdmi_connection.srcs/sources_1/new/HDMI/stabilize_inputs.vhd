@@ -65,7 +65,9 @@ begin
     stabilize_inputs : process(div_clk)
     begin
         if rising_edge(div_clk) then
+            
             o_out <= i_in;
+            
         end if;
     end process;
     

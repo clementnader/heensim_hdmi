@@ -3,7 +3,7 @@
 -- Engineer: 
 -- 
 -- Create Date: 09/30/2021 02:14:56 PM
--- Package Name: hdmi_resolution
+-- Package Name: hdmi_resolution_pkg
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 
@@ -22,7 +22,7 @@ library IEEE;
     use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 
-package hdmi_resolution is
+package hdmi_resolution_pkg is
     
     type T_HDMI_RES_NAME is (
         HDMI_RES_1280x720_60_P, 
@@ -32,8 +32,8 @@ package hdmi_resolution is
     
     -- Resolution Definition
 --    constant C_RES_NAME : T_HDMI_RES_NAME := HDMI_RES_1280x720_60_P;   -- ( 75 MHz pixel clock needed)
---    constant C_RES_NAME : T_HDMI_RES_NAME := HDMI_RES_1920x1080_60_P;  -- (150 MHz pixel clock needed)
-    constant C_RES_NAME : T_HDMI_RES_NAME := HDMI_RES_1680x1050_60_P;  -- (150 MHz pixel clock needed)
+    constant C_RES_NAME : T_HDMI_RES_NAME := HDMI_RES_1920x1080_60_P;  -- (150 MHz pixel clock needed)
+--    constant C_RES_NAME : T_HDMI_RES_NAME := HDMI_RES_1680x1050_60_P;  -- (150 MHz pixel clock needed)
     
     type T_HDMI_RES_VIDEO_TIMING is
         record
@@ -85,21 +85,10 @@ package hdmi_resolution is
     constant C_V_MAX         : STD_LOGIC_VECTOR(11 downto 0) := C_V_END_SYNC   + C_VIDEO_TIMING.VBackPorch;
     constant C_V_SYNC_ACTIVE : STD_LOGIC                     := C_VIDEO_TIMING.VSyncPolarity;
     
-    ------------------------------------------
-    
-    constant C_NB_H_POINTS : STD_LOGIC_VECTOR(11 downto 0) := x"400";  -- 1024
-    constant C_H_OFFSET    : STD_LOGIC_VECTOR(11 downto 0) := '0' & (C_H_VISIBLE(11 downto 1) - C_NB_H_POINTS(11 downto 1));  -- (C_H_VISIBLE - C_NB_H_POINTS) / 2
-    constant C_V_OFFSET    : STD_LOGIC_VECTOR(11 downto 0) := x"040";  -- 64
-    
-    ------------------------------------------
-    
-    constant C_H_PLOT : STD_LOGIC_VECTOR(11 downto 0) := C_H_VISIBLE - C_H_OFFSET-C_H_OFFSET;
-    constant C_V_PLOT : STD_LOGIC_VECTOR(11 downto 0) := C_V_VISIBLE - C_V_OFFSET-C_V_OFFSET;
-    
 end package;
 
 
-package body hdmi_resolution is
+package body hdmi_resolution_pkg is
     
     function hdmi_res_get_resolution (
         res_name : T_HDMI_RES_NAME

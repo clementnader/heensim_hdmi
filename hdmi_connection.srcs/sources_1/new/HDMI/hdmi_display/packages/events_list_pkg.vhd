@@ -3,7 +3,7 @@
 -- Engineer: 
 -- 
 -- Create Date: 10/05/2021 12:07:46 PM
--- Package Name: events_list
+-- Package Name: events_list_pkg
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 
@@ -23,26 +23,31 @@ library IEEE;
     use IEEE.NUMERIC_STD.ALL;
 
 
-package events_list is
+package events_list_pkg is
     
-    constant C_LENGTH_CHIP_ID : INTEGER := 7;
-    constant C_LENGTH_VIRT    : INTEGER := 3;
-    constant C_LENGTH_ROW     : INTEGER := 4;
-    constant C_LENGTH_COLUMN  : INTEGER := 4;
-    
-    constant C_LENGTH_NEURON_ID : INTEGER := C_LENGTH_CHIP_ID + C_LENGTH_VIRT + C_LENGTH_ROW + C_LENGTH_COLUMN;
-    constant C_LENGTH_TIMESTAMP : INTEGER := 32;
+    -- ZedBoard
+    constant C_BOARD_NAME : STRING := "ZedBoard";
     
     constant C_MAX_CHIP_ID : INTEGER := 1;
     constant C_MAX_VIRT    : INTEGER := 7;
     constant C_MAX_ROW     : INTEGER := 4;
     constant C_MAX_COLUMN  : INTEGER := 4;
     
-    constant C_MAX_ID : INTEGER := C_MAX_COLUMN
-             + (C_MAX_COLUMN+1) * (C_MAX_ROW
-             + (C_MAX_ROW+1)    * (C_MAX_VIRT
-             + (C_MAX_VIRT+1)   * (C_MAX_CHIP_ID-1)));
+    constant C_RANGE_ID : INTEGER := 200;
     
+    ------------------------------------------
+    
+    constant C_LENGTH_CHIP_ID : INTEGER := 7;
+    constant C_LENGTH_VIRT    : INTEGER := 3;
+    constant C_LENGTH_ROW     : INTEGER := 4;
+    constant C_LENGTH_COLUMN  : INTEGER := 4;
+    
+    constant C_LENGTH_NEURON_ID : INTEGER := C_LENGTH_CHIP_ID + C_LENGTH_VIRT + C_LENGTH_ROW + C_LENGTH_COLUMN;  -- 18
+    
+    constant C_LENGTH_TIMESTAMP : INTEGER := 32;
+    
+    ------------------------------------------
+
     function get_id_value(
         neuron_id : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0)
     ) return STD_LOGIC_VECTOR;
@@ -50,7 +55,7 @@ package events_list is
 end package;
 
 
-package body events_list is
+package body events_list_pkg is
     
     function get_id_value (
         neuron_id : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0)
@@ -75,6 +80,7 @@ package body events_list is
                 + std_logic_vector(to_unsigned(C_MAX_COLUMN+1, C_LENGTH_COLUMN+1)) * (row
                 + std_logic_vector(to_unsigned(C_MAX_ROW+1,    C_LENGTH_ROW+1))    * (virt
                 + std_logic_vector(to_unsigned(C_MAX_VIRT+1,   C_LENGTH_VIRT+1))   * (chip_id-1)));
+            
             return id_value(C_LENGTH_NEURON_ID-1 downto 0);
         
     end function;

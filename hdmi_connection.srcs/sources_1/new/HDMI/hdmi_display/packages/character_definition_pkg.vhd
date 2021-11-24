@@ -3,7 +3,7 @@
 -- Engineer: 
 -- 
 -- Create Date: 11/18/2021 03:20:03 PM
--- Package Name: character_definition
+-- Package Name: character_definition_pkg
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 
@@ -21,7 +21,7 @@ library IEEE;
     use IEEE.STD_LOGIC_1164.ALL;
 
 
-package character_definition is
+package character_definition_pkg is
     
     constant C_ASCII_CODE_RANGE : INTEGER := 128;  -- 128 = 2^7 ASCII characters
     
@@ -2219,6 +2219,6 @@ package character_definition is
 end package;
 
 
-package body character_definition is
+package body character_definition_pkg is
     
 end package body;

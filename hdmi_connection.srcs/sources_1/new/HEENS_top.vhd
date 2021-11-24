@@ -40,7 +40,51 @@ end HEENS_top;
 
 
 architecture Behavioral of HEENS_top is
-
+    
+    component HEENSim
+        generic (
+            G_DATA_SIZE : INTEGER;
+            G_PERIOD    : INTEGER
+        );
+        port (
+            i_clk                : in STD_LOGIC;
+            i_rst                : in STD_LOGIC;
+            i_hdmi_ready_rd_fifo : in STD_LOGIC;
+            
+            o_fifo_dout  : out STD_LOGIC_VECTOR(31 downto 0);
+            o_fifo_empty : out STD_LOGIC;
+            o_fifo_valid : out STD_LOGIC;
+            o_ph_init    : out STD_LOGIC;
+            o_ph_conf    : out STD_LOGIC;
+            o_ph_exec    : out STD_LOGIC;
+            o_ph_dist    : out STD_LOGIC
+        );
+    end component;
+    
+    component hdmi_display
+        port (
+            i_clk        : in STD_LOGIC;
+            i_clk_150    : in STD_LOGIC;
+            i_clk_150_90 : in STD_LOGIC;
+            i_rst        : in STD_LOGIC;
+            i_btnl       : in STD_LOGIC;
+            i_btnr       : in STD_LOGIC;
+            i_ph_dist    : in STD_LOGIC;
+            i_fifo_empty : in STD_LOGIC;
+            i_fifo_valid : in STD_LOGIC;
+            i_fifo_dout  : in STD_LOGIC_VECTOR(17 downto 0);
+            
+            o_hdmi_ready_rd_fifo : out STD_LOGIC;
+            o_hdmi_clk           : out STD_LOGIC;
+            o_hdmi_d             : out STD_LOGIC_VECTOR(15 downto 0);
+            o_hdmi_de            : out STD_LOGIC;
+            o_hdmi_hsync         : out STD_LOGIC;
+            o_hdmi_vsync         : out STD_LOGIC;
+            o_hdmi_scl           : out STD_LOGIC;
+            o_hdmi_sda           : out STD_LOGIC
+        );
+    end component;
+    
     component clk_wiz_1 
         port (
             clk_in1 : in STD_LOGIC;
@@ -87,31 +131,31 @@ begin
 --  --------------------------------------- Z_INTERFACE -------------------------------
 --  ===================================================================================
     
-    ZAER_INTERFACE_i : entity work.HEENSim
-    generic map (
-        G_DATA_SIZE => 1,
-        G_PERIOD    => 125_000  -- Tspike = 1 ms
-    )
-    port map (
-        i_clk                => clk,
-        i_rst                => reset,
-        i_hdmi_ready_rd_fifo => hdmi_rd_fifo,
-        
-        o_fifo_dout  => dout_input_fifo,
-        o_fifo_empty => empty_input_fifo,
-        o_fifo_valid => valid_input_fifo,
-        o_ph_init    => ph_init,
-        o_ph_conf    => ph_conf,
-        o_ph_exec    => ph_exec,
-        o_ph_dist    => ph_dist
-    );
+    ZAER_INTERFACE_i : HEENSim
+        generic map (
+            G_DATA_SIZE => 1,
+            G_PERIOD    => 125_000  -- Tspike = 1 ms
+        )
+        port map (
+            i_clk                => clk,
+            i_rst                => reset,
+            i_hdmi_ready_rd_fifo => hdmi_rd_fifo,
+            
+            o_fifo_dout  => dout_input_fifo,
+            o_fifo_empty => empty_input_fifo,
+            o_fifo_valid => valid_input_fifo,
+            o_ph_init    => ph_init,
+            o_ph_conf    => ph_conf,
+            o_ph_exec    => ph_exec,
+            o_ph_dist    => ph_dist
+        );
     
     
 --  ===================================================================================
 --  --------------------------------------- HDMI --------------------------------------
 --  ===================================================================================
     
-    HDMI_DISPLAY_INST : entity work.hdmi_display
+    HDMI_DISPLAY_INST : hdmi_display
         port map (
             i_clk        => clk,
             i_clk_150    => clk_150,
@@ -135,13 +179,13 @@ begin
         );
     
     clk_wiz_1_inst : clk_wiz_1
-    port map (
-        clk_in1 => GCLK,  -- 100 MHz
-        reset   => '0',
-        
-        clk        => clk,        -- 125 MHz
-        clk_150    => clk_150,    -- 150 MHz
-        clk_150_90 => clk_150_90  -- 150 MHz, phase shift 90°
-    );
+        port map (
+            clk_in1 => GCLK,  -- 100 MHz
+            reset   => '0',
+            
+            clk        => clk,        -- 125 MHz
+            clk_150    => clk_150,    -- 150 MHz
+            clk_150_90 => clk_150_90  -- 150 MHz, phase shift 90°
+        );
 
 end Behavioral;

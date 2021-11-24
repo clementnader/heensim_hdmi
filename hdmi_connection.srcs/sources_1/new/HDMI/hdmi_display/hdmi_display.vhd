@@ -22,22 +22,21 @@ library IEEE;
     use IEEE.STD_LOGIC_1164.ALL;
 
 library work;
-    use work.hdmi_resolution.ALL;
-    use work.events_list.ALL;
+    use work.events_list_pkg.ALL;
 
 
 entity hdmi_display is
     port (
-        i_clk           : in STD_LOGIC;  -- 125 MHz
-        i_clk_150       : in STD_LOGIC;  -- 150 MHz
-        i_clk_150_90    : in STD_LOGIC;  -- 150 MHz, 90° phase shift
-        i_rst           : in STD_LOGIC;
-        i_btnl          : in STD_LOGIC;
-        i_btnr          : in STD_LOGIC;
-        i_ph_dist       : in STD_LOGIC;
-        i_fifo_empty    : in STD_LOGIC;
-        i_fifo_valid    : in STD_LOGIC;
-        i_fifo_dout     : in STD_LOGIC_VECTOR(17 downto 0);
+        i_clk        : in STD_LOGIC;  -- 125 MHz
+        i_clk_150    : in STD_LOGIC;  -- 150 MHz
+        i_clk_150_90 : in STD_LOGIC;  -- 150 MHz, 90° phase shift
+        i_rst        : in STD_LOGIC;
+        i_btnl       : in STD_LOGIC;
+        i_btnr       : in STD_LOGIC;
+        i_ph_dist    : in STD_LOGIC;
+        i_fifo_empty : in STD_LOGIC;
+        i_fifo_valid : in STD_LOGIC;
+        i_fifo_dout  : in STD_LOGIC_VECTOR(17 downto 0);
         
         o_hdmi_ready_rd_fifo : out STD_LOGIC;
         o_hdmi_clk           : out STD_LOGIC;
@@ -83,8 +82,8 @@ architecture Behavioral of hdmi_display is
             G_NB_INPUTS : INTEGER
         );
         port (
-            i_src_clk  : in STD_LOGIC;
-            i_src      : in STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0);
+            i_src_clk : in STD_LOGIC;
+            i_src     : in STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0);
             
             i_dest_clk : in STD_LOGIC;
             o_dest     : out STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0)
@@ -106,7 +105,7 @@ architecture Behavioral of hdmi_display is
             o_mem_wr_en          : out STD_LOGIC;
             o_mem_wr_we          : out STD_LOGIC;
             o_mem_wr_addr        : out STD_LOGIC_VECTOR(9 downto 0);
-            o_mem_wr_din         : out STD_LOGIC_VECTOR(C_MAX_ID downto 0);
+            o_mem_wr_din         : out STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
             o_transfer_done      : out STD_LOGIC
         );
     end component;
@@ -117,15 +116,15 @@ architecture Behavioral of hdmi_display is
             ena   : in STD_LOGIC;
             wea   : in STD_LOGIC_VECTOR(0 downto 0);
             addra : in STD_LOGIC_VECTOR(9 downto 0);
-            dina  : in STD_LOGIC_VECTOR(C_MAX_ID downto 0);
-            douta : out STD_LOGIC_VECTOR(C_MAX_ID downto 0);
+            dina  : in STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
+            douta : out STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
             
             clkb  : in STD_LOGIC;
             enb   : in STD_LOGIC;
             web   : in STD_LOGIC_VECTOR(0 downto 0);
             addrb : in STD_LOGIC_VECTOR(9 downto 0);
-            dinb  : in STD_LOGIC_VECTOR(C_MAX_ID downto 0);
-            doutb : out STD_LOGIC_VECTOR(C_MAX_ID downto 0)
+            dinb  : in STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
+            doutb : out STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0)
         );
     end component;
     
@@ -146,7 +145,7 @@ architecture Behavioral of hdmi_display is
             i_freeze_screen : in STD_LOGIC;
             i_hcounter      : in STD_LOGIC_VECTOR(11 downto 0);
             i_vcounter      : in STD_LOGIC_VECTOR(11 downto 0);
-            i_mem_rd_data   : in STD_LOGIC_VECTOR(C_MAX_ID downto 0);  -- 199 downto 0
+            i_mem_rd_data   : in STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
             i_current_ts    : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
             i_extend_vaxis  : in STD_LOGIC;
             i_transfer_done : in STD_LOGIC;
@@ -204,11 +203,11 @@ architecture Behavioral of hdmi_display is
     signal mem_wr_en   : STD_LOGIC;
     signal mem_wr_we   : STD_LOGIC;
     signal mem_wr_addr : STD_LOGIC_VECTOR(9 downto 0);
-    signal mem_wr_din  : STD_LOGIC_VECTOR(C_MAX_ID downto 0);
+    signal mem_wr_din  : STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
     
     signal mem_rd_en   : STD_LOGIC;
     signal mem_rd_addr : STD_LOGIC_VECTOR(9 downto 0);
-    signal mem_rd_data : STD_LOGIC_VECTOR(C_MAX_ID downto 0);
+    signal mem_rd_data : STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
     
     -- Signals from the spikes FIFO reading state machine
     signal sp_fsm_transfer_done     : STD_LOGIC;

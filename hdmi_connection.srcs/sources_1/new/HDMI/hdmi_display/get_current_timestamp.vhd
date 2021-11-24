@@ -23,7 +23,7 @@ library IEEE;
     use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 library work;
-    use work.events_list.ALL;
+    use work.events_list_pkg.ALL;
 
 
 entity get_current_timestamp is

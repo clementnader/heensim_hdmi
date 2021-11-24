@@ -21,9 +21,6 @@
 library IEEE;
     use IEEE.STD_LOGIC_1164.ALL;
 
-library work;
-    use work.hdmi_resolution.ALL;
-
 
 entity hdmi_connection is
     port (

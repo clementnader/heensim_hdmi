@@ -23,7 +23,7 @@ library IEEE;
     use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 library work;
-    use work.hdmi_resolution.ALL;
+    use work.hdmi_resolution_pkg.ALL;
 
 
 entity position_counters is

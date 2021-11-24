@@ -25,7 +25,7 @@ library IEEE;
     use IEEE.NUMERIC_STD.ALL;
 
 library work;
-    use work.events_list.ALL;
+    use work.events_list_pkg.ALL;
 
 
 entity read_fifo_spikes is
@@ -43,8 +43,8 @@ entity read_fifo_spikes is
         o_mem_wr_en          : out STD_LOGIC;
         o_mem_wr_we          : out STD_LOGIC;
         o_mem_wr_addr        : out STD_LOGIC_VECTOR(9 downto 0);
-        o_mem_wr_din         : out STD_LOGIC_VECTOR(C_MAX_ID downto 0);
-        o_transfer_done      : out STD_LOGIC
+        o_mem_wr_din         : out STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
+        o_transfer_done      : out STD_LOGIC                                     
     );
 end read_fifo_spikes;
 
@@ -57,19 +57,19 @@ architecture Behavioral of read_fifo_spikes is
             ena   : in STD_LOGIC;
             wea   : in STD_LOGIC_VECTOR(0 downto 0);
             addra : in STD_LOGIC_VECTOR(4 downto 0);
-            dina  : in STD_LOGIC_VECTOR(C_MAX_ID downto 0);
+            dina  : in STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
             
-            douta : out STD_LOGIC_VECTOR(C_MAX_ID downto 0)
+            douta : out STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0)
         );
     end component;
     
-    constant C_BLANK_MEMORY : STD_LOGIC_VECTOR(C_MAX_ID downto 0) := (others => '0');
+    constant C_BLANK_MEMORY : STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0) := (others => '0');
     
     function convert_neuron_id (
         id_value   : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
-        old_memory : STD_LOGIC_VECTOR(C_MAX_ID downto 0)
+        old_memory : STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0)
     ) return STD_LOGIC_VECTOR is
-            variable new_memory   : STD_LOGIC_VECTOR(C_MAX_ID downto 0);
+            variable new_memory   : STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
         begin
             new_memory := old_memory;
             new_memory(to_integer(unsigned(id_value))) := '1';
@@ -78,7 +78,6 @@ architecture Behavioral of read_fifo_spikes is
     
     type T_FIFO_RD_STATE is (
         IDLE,
-        EMPTY_MEM,
         FIFO_READ,
         WAIT_BEFORE_MEM_READ,
         MEM_WRITE,
@@ -96,8 +95,8 @@ architecture Behavioral of read_fifo_spikes is
     signal buffer_en   : STD_LOGIC;
     signal buffer_we   : STD_LOGIC;
     signal buffer_addr : STD_LOGIC_VECTOR(4 downto 0);
-    signal buffer_din  : STD_LOGIC_VECTOR(C_MAX_ID downto 0);
-    signal buffer_dout : STD_LOGIC_VECTOR(C_MAX_ID downto 0);
+    signal buffer_din  : STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
+    signal buffer_dout : STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
     
     -- Counter to know how many values are in the buffer and then need to be transfer to the memory
     signal buffer_cnt : STD_LOGIC_VECTOR(4 downto 0) := (others => '0');
@@ -166,22 +165,19 @@ begin
                         o_hdmi_ready_rd_fifo <= '0';
                         o_transfer_done      <= '0';
                         if i_ph_dist = '1' then  -- a new distribution phase
-                            fifo_rd_state <= EMPTY_MEM;
+                            buffer_en   <= '1';
+                            buffer_we   <= '1';
+                            buffer_addr <= buffer_cnt;
+                            buffer_din  <= C_BLANK_MEMORY;
+                            buffer_cnt  <= buffer_cnt + 1;
+                            
+                            if i_fifo_empty = '0' then  -- there is an element to read from the FIFO
+                                fifo_rd_state <= FIFO_READ;
+                            else  -- the FIFO is empty
+                                fifo_rd_state <= FIFO_EMPTY;
+                            end if;
                         else
                             fifo_rd_state <= IDLE;
-                        end if;
-                    
-                    when EMPTY_MEM =>
-                        buffer_en   <= '1';
-                        buffer_we   <= '1';
-                        buffer_addr <= buffer_cnt;
-                        buffer_din  <= C_BLANK_MEMORY;
-                        buffer_cnt  <= buffer_cnt + 1;
-                        
-                        if i_fifo_empty = '0' then  -- there is an element to read from the FIFO
-                            fifo_rd_state <= FIFO_READ;
-                        else  -- the FIFO is empty
-                            fifo_rd_state <= FIFO_EMPTY;
                         end if;
                     
                     when FIFO_READ =>
@@ -198,7 +194,7 @@ begin
                         end if;
                     
                     when WAIT_BEFORE_MEM_READ =>
-                        id_value      <= get_id_value(neuron_id);  -- compute the transform from the neuron_id on 18 bits to a number from 0 to C_MAX_ID(=199 for the ZedBoard)
+                        id_value      <= get_id_value(neuron_id);  -- compute the transform from the neuron_id on 18 bits to a number from 0 to C_RANGE_ID-1(=199 for the ZedBoard)
                         fifo_rd_state <= MEM_WRITE;
                     
                     when MEM_WRITE =>  -- write the new vertical array, and return to read the FIFO again
