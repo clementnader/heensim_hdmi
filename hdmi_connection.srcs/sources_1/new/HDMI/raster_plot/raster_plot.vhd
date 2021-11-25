@@ -96,6 +96,21 @@ architecture Behavioral of raster_plot is
     
     ------------------------------------------
     
+    component write_time
+        port (
+            i_clk        : in STD_LOGIC;
+            i_hcounter   : in STD_LOGIC_VECTOR(11 downto 0);
+            i_vcounter   : in STD_LOGIC_VECTOR(11 downto 0);
+            i_current_ts : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
+            
+            o_time_label_pixel : out STD_LOGIC;
+            o_time_pixel       : out STD_LOGIC;
+            o_time_val_pixel   : out STD_LOGIC
+        );
+    end component;
+    
+    ------------------------------------------
+    
     -- Definition of the colors
     constant C_BLACK   : STD_LOGIC_VECTOR(23 downto 0) := x"000000";
     constant C_GREY    : STD_LOGIC_VECTOR(23 downto 0) := x"222222";
@@ -155,6 +170,12 @@ architecture Behavioral of raster_plot is
     signal h_label_pixel : STD_LOGIC;
     signal v_label_pixel : STD_LOGIC;
     
+    ------------------------------------------
+    
+    signal time_label_pixel : STD_LOGIC;
+    signal time_pixel       : STD_LOGIC;
+    signal time_val_pixel   : STD_LOGIC;
+    
 begin
     
     write_info_inst : write_info
@@ -181,7 +202,7 @@ begin
             o_v_label_pixel => v_label_pixel
         );
     
-    -------------------------  -----------------
+    ------------------------------------------
     
     plot_axes_ticks_inst : plot_axes_ticks
         port map (
@@ -197,7 +218,19 @@ begin
             o_vcnt3 => vcnt3
         );
     
-    -------------------------  -----------------
+    write_time_inst : write_time
+        port map (
+            i_clk        => i_clk,
+            i_hcounter   => i_hcounter,
+            i_vcounter   => i_vcounter,
+            i_current_ts => i_current_ts,
+            
+            o_time_label_pixel => time_label_pixel,
+            o_time_pixel       => time_pixel,
+            o_time_val_pixel   => time_val_pixel
+        );
+    
+    ------------------------------------------
     
     counter_latch_proc : process(i_clk)
     begin
@@ -451,6 +484,17 @@ begin
             -- Axes label
             if h_label_pixel = '1' or v_label_pixel = '1' then
                 o_color <= C_BLACK;
+            end if;
+            
+            -- Print current time
+            if time_label_pixel = '1' then
+                o_color <= C_BLACK;
+            end if;
+            if time_pixel = '1' then
+                o_color <= C_BLACK;
+            end if;
+            if time_val_pixel = '1' then
+                o_color <= C_BLUE;
             end if;
             
         end if;

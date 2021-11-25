@@ -51,6 +51,7 @@ architecture Behavioral of write_axes is
         );
         port (
             i_clk          : in STD_LOGIC;
+            i_do_display   : in BOOLEAN;
             i_display_text : in STRING(1 to G_TEXT_LENGTH);
             i_text_hpos    : in STD_LOGIC_VECTOR(11 downto 0);
             i_text_vpos    : in STD_LOGIC_VECTOR(11 downto 0);
@@ -67,6 +68,7 @@ architecture Behavioral of write_axes is
         );
         port (
             i_clk          : in STD_LOGIC;
+            i_do_display   : in BOOLEAN;
             i_display_text : in STRING(1 to G_TEXT_LENGTH);
             i_text_hpos    : in STD_LOGIC_VECTOR(11 downto 0);
             i_text_vpos    : in STD_LOGIC_VECTOR(11 downto 0);
@@ -212,6 +214,7 @@ begin
                 )
                 port map (
                     i_clk          => i_clk,
+                    i_do_display   => True,
                     i_display_text => C_H_TICK_NAME(i),
                     i_text_hpos    => C_H_TICK_HPOS(i),
                     i_text_vpos    => h_tick_vpos,
@@ -232,6 +235,7 @@ begin
             )
             port map (
                 i_clk          => i_clk,
+                i_do_display   => True,
                 i_display_text => C_V_TICK_NAME(i),
                 i_text_hpos    => C_V_TICK_HPOS,
                 i_text_vpos    => v_tick_vpos(i),
@@ -251,6 +255,7 @@ begin
         )
         port map (
             i_clk          => i_clk,
+            i_do_display   => True,
             i_display_text => C_H_LABEL,
             i_text_hpos    => C_H_MIDDLE_PLOT - C_FONT_WIDTH/2*9 - 3,
             i_text_vpos    => h_label_vpos,
@@ -268,6 +273,7 @@ begin
         )
         port map (
             i_clk          => i_clk,
+            i_do_display   => True,
             i_display_text => C_V_LABEL,
             i_text_hpos    => C_H_LOW_LIMIT - 15 - 3*C_FONT_WIDTH - 10 - C_FONT_HEIGHT,
             i_text_vpos    => v_label_vpos,

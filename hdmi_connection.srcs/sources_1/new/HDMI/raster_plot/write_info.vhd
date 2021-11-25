@@ -48,6 +48,7 @@ architecture Behavioral of write_info is
         );
         port (
             i_clk          : in STD_LOGIC;
+            i_do_display   : in BOOLEAN;
             i_display_text : in STRING(1 to G_TEXT_LENGTH);
             i_text_hpos    : in STD_LOGIC_VECTOR(11 downto 0);
             i_text_vpos    : in STD_LOGIC_VECTOR(11 downto 0);
@@ -57,6 +58,18 @@ architecture Behavioral of write_info is
             o_pixel : out STD_LOGIC
         );
     end component;
+    
+    ------------------------------------------
+    
+    constant C_CHIP_STR : STRING := "Number of Chips:";
+    constant C_VIRT_STR : STRING := "Number of Virtualization Levels:";
+    constant C_ROW_STR  : STRING := "Number of Rows:";
+    constant C_COL_STR  : STRING := "Number of Columns:";
+    
+    constant C_BASE_H_POS : STD_LOGIC_VECTOR(11 downto 0) := x"008";
+    constant C_BASE_V_POS : STD_LOGIC_VECTOR(11 downto 0) := x"008";
+    
+    constant C_NB_BASE_V_POS : STD_LOGIC_VECTOR(11 downto 0) := x"008" + 3*C_FONT_HEIGHT;
     
     ------------------------------------------
     
@@ -75,8 +88,6 @@ architecture Behavioral of write_info is
     signal nb_row_val_pixel  : STD_LOGIC;
     signal nb_col_val_pixel  : STD_LOGIC;
     
-    ------------------------------------------
-    
 begin
     
     o_text_pixel <= nb_chip_pixel or nb_virt_pixel or nb_row_pixel or nb_col_pixel;
@@ -90,9 +101,10 @@ begin
         )
         port map (
             i_clk          => i_clk,
+            i_do_display   => True,
             i_display_text => C_BOARD_NAME,
-            i_text_hpos    => x"008",
-            i_text_vpos    => x"008",
+            i_text_hpos    => C_BASE_H_POS,
+            i_text_vpos    => C_BASE_V_POS,
             i_hcounter     => i_hcounter,
             i_vcounter     => i_vcounter,
             
@@ -103,13 +115,14 @@ begin
     
     write_text_inst_nb_chip : write_text
         generic map (
-           G_TEXT_LENGTH => 16
+           G_TEXT_LENGTH => C_CHIP_STR'length
         )
         port map (
             i_clk          => i_clk,
-            i_display_text => "Number of chips:",
-            i_text_hpos    => x"008",
-            i_text_vpos    => x"008" + 2*C_FONT_HEIGHT,
+            i_do_display   => True,
+            i_display_text => C_CHIP_STR,
+            i_text_hpos    => C_BASE_H_POS,
+            i_text_vpos    => C_NB_BASE_V_POS,
             i_hcounter     => i_hcounter,
             i_vcounter     => i_vcounter,
             
@@ -122,9 +135,10 @@ begin
         )
         port map (
             i_clk          => i_clk,
+            i_do_display   => True,
             i_display_text => C_NB_CHIP_STR,
-            i_text_hpos    => x"008" + (16+1)*C_FONT_WIDTH,
-            i_text_vpos    => x"008" + 2*C_FONT_HEIGHT,
+            i_text_hpos    => C_BASE_H_POS + (C_CHIP_STR'length+1)*C_FONT_WIDTH,
+            i_text_vpos    => C_NB_BASE_V_POS,
             i_hcounter     => i_hcounter,
             i_vcounter     => i_vcounter,
             
@@ -135,13 +149,14 @@ begin
     
     write_text_inst_nb_virt : write_text
         generic map (
-           G_TEXT_LENGTH => 25
+           G_TEXT_LENGTH => C_VIRT_STR'length
         )
         port map (
             i_clk          => i_clk,
-            i_display_text => "Number of virtualization:",
-            i_text_hpos    => x"008",
-            i_text_vpos    => x"008" + 3*C_FONT_HEIGHT,
+            i_do_display   => True,
+            i_display_text => C_VIRT_STR,
+            i_text_hpos    => C_BASE_H_POS,
+            i_text_vpos    => C_NB_BASE_V_POS + C_FONT_HEIGHT,
             i_hcounter     => i_hcounter,
             i_vcounter     => i_vcounter,
             
@@ -154,9 +169,10 @@ begin
         )
         port map (
             i_clk          => i_clk,
+            i_do_display   => True,
             i_display_text => C_NB_VIRT_STR,
-            i_text_hpos    => x"008" + (25+1)*C_FONT_WIDTH,
-            i_text_vpos    => x"008" + 3*C_FONT_HEIGHT,
+            i_text_hpos    => C_BASE_H_POS + (C_VIRT_STR'length+1)*C_FONT_WIDTH,
+            i_text_vpos    => C_NB_BASE_V_POS + C_FONT_HEIGHT,
             i_hcounter     => i_hcounter,
             i_vcounter     => i_vcounter,
             
@@ -167,13 +183,14 @@ begin
     
     write_text_inst_nb_row : write_text
         generic map (
-           G_TEXT_LENGTH => 15
+           G_TEXT_LENGTH => C_ROW_STR'length
         )
         port map (
             i_clk          => i_clk,
-            i_display_text => "Number of rows:",
-            i_text_hpos    => x"008",
-            i_text_vpos    => x"008" + 4*C_FONT_HEIGHT,
+            i_do_display   => True,
+            i_display_text => C_ROW_STR,
+            i_text_hpos    => C_BASE_H_POS,
+            i_text_vpos    => C_NB_BASE_V_POS + 2*C_FONT_HEIGHT,
             i_hcounter     => i_hcounter,
             i_vcounter     => i_vcounter,
             
@@ -186,9 +203,10 @@ begin
         )
         port map (
             i_clk          => i_clk,
+            i_do_display   => True,
             i_display_text => C_NB_ROW_STR,
-            i_text_hpos    => x"008" + (15+1)*C_FONT_WIDTH,
-            i_text_vpos    => x"008" + 4*C_FONT_HEIGHT,
+            i_text_hpos    => C_BASE_H_POS + (C_ROW_STR'length+1)*C_FONT_WIDTH,
+            i_text_vpos    => C_NB_BASE_V_POS + 2*C_FONT_HEIGHT,
             i_hcounter     => i_hcounter,
             i_vcounter     => i_vcounter,
             
@@ -199,13 +217,14 @@ begin
     
     write_text_inst_nb_col : write_text
         generic map (
-           G_TEXT_LENGTH => 18
+           G_TEXT_LENGTH => C_COL_STR'length
         )
         port map (
             i_clk          => i_clk,
-            i_display_text => "Number of columns:",
-            i_text_hpos    => x"008",
-            i_text_vpos    => x"008" + 5*C_FONT_HEIGHT,
+            i_do_display   => True,
+            i_display_text => C_COL_STR,
+            i_text_hpos    => C_BASE_H_POS,
+            i_text_vpos    => C_NB_BASE_V_POS + 3*C_FONT_HEIGHT,
             i_hcounter     => i_hcounter,
             i_vcounter     => i_vcounter,
             
@@ -218,9 +237,10 @@ begin
         )
         port map (
             i_clk          => i_clk,
+            i_do_display   => True,
             i_display_text => C_NB_COL_STR,
-            i_text_hpos    => x"008" + (18+1)*C_FONT_WIDTH,
-            i_text_vpos    => x"008" + 5*C_FONT_HEIGHT,
+            i_text_hpos    => C_BASE_H_POS + (C_COL_STR'length+1)*C_FONT_WIDTH,
+            i_text_vpos    => C_NB_BASE_V_POS + 3*C_FONT_HEIGHT,
             i_hcounter     => i_hcounter,
             i_vcounter     => i_vcounter,
             

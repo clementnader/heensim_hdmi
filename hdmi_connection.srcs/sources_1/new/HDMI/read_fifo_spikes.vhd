@@ -34,6 +34,7 @@ entity read_fifo_spikes is
         i_rst           : in STD_LOGIC;
         i_freeze_screen : in STD_LOGIC;
         i_ph_dist       : in STD_LOGIC;
+        i_current_ts    : in STD_LOGIC_VECTOR (C_LENGTH_TIMESTAMP-1 downto 0);
         i_fifo_empty    : in STD_LOGIC;
         i_fifo_valid    : in STD_LOGIC;
         i_fifo_dout     : in STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
@@ -88,7 +89,6 @@ architecture Behavioral of read_fifo_spikes is
     
     signal fifo_rd_state : T_FIFO_RD_STATE := IDLE;
     
-    signal current_ts : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0) := (others => '0');
     signal neuron_id  : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
     signal id_value   : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
     
@@ -155,7 +155,6 @@ begin
                 buffer_en            <= '0';
                 buffer_we            <= '0';
                 buffer_cnt           <= (others => '0');
-                current_ts           <= (others => '0');
                 fifo_rd_state        <= IDLE;
                 
             else
@@ -216,13 +215,12 @@ begin
                             fifo_rd_state <= FIFO_READ;
                         elsif transfer_from_buffer = '1' then
                             transfer_read_flag <= '1';
-                            transfer_addr      <= current_ts(transfer_addr'high downto 0) - (buffer_cnt-1);
+                            transfer_addr      <= i_current_ts(transfer_addr'high downto 0) - (buffer_cnt-1);
                             transfer_rd_delay  <= '0';
                             buffer_en          <= '1';
                             buffer_addr        <= (others => '0');
                             fifo_rd_state      <= WAIT_BEFORE_TRANSFER_READ;
                         elsif i_ph_dist = '0' then  -- the end of the distribution phase
-                            current_ts    <= current_ts + 1;  -- increment the timestamp
                             fifo_rd_state <= IDLE;
                         else
                             fifo_rd_state <= FIFO_EMPTY;

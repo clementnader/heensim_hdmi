@@ -96,6 +96,7 @@ architecture Behavioral of hdmi_display is
             i_rst           : in STD_LOGIC;
             i_freeze_screen : in STD_LOGIC;
             i_ph_dist       : in STD_LOGIC;
+            i_current_ts    : in STD_LOGIC_VECTOR (C_LENGTH_TIMESTAMP-1 downto 0);
             i_fifo_empty    : in STD_LOGIC;
             i_fifo_valid    : in STD_LOGIC;
             i_fifo_dout     : in STD_LOGIC_VECTOR(17 downto 0);
@@ -180,8 +181,9 @@ architecture Behavioral of hdmi_display is
         );
     end component;
     
-    -- Clocking
-    signal current_ts : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
+    -- Current time
+    signal current_ts     : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
+    signal current_ts_150 : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
     
     -- Stabilized inputs
     signal freeze_screen : STD_LOGIC;
@@ -283,12 +285,23 @@ begin
             o_dest(0)  => plot_end_screen
         );
     
+    get_current_timestamp_inst : get_current_timestamp
+        port map ( 
+            i_clk           => i_clk,
+            i_rst           => i_rst,
+            i_freeze_screen => freeze_screen,
+            i_ph_dist       => i_ph_dist,
+            
+            o_current_ts => current_ts
+        );
+    
     read_fifo_spikes_inst : read_fifo_spikes
         port map (
             i_clk           => i_clk,
             i_rst           => i_rst,
             i_freeze_screen => ff_freeze_screen,
             i_ph_dist       => i_ph_dist,
+            i_current_ts    => current_ts,
             i_fifo_empty    => i_fifo_empty,
             i_fifo_valid    => i_fifo_valid,
             i_fifo_dout     => i_fifo_dout,
@@ -319,14 +332,14 @@ begin
             doutb  => mem_rd_data
         );
     
-    get_current_timestamp_inst : get_current_timestamp
+    get_current_timestamp_inst_150 : get_current_timestamp
         port map ( 
             i_clk           => i_clk_150,
             i_rst           => rst_150,
             i_freeze_screen => freeze_screen_150,
             i_ph_dist       => ph_dist_150,
             
-            o_current_ts => current_ts
+            o_current_ts => current_ts_150
         );
     
     raster_plot_inst : raster_plot
@@ -336,7 +349,7 @@ begin
             i_hcounter      => color_hcounter,
             i_vcounter      => color_vcounter,
             i_mem_rd_data   => mem_rd_data,
-            i_current_ts    => current_ts,
+            i_current_ts    => current_ts_150,
             i_extend_vaxis  => extend_vaxis_150,
             i_transfer_done => sp_fsm_transfer_done_150,
             

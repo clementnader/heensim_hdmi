@@ -23,6 +23,10 @@ library IEEE;
 
 package character_definition_pkg is
     
+    type T_DIGITS_ARRAY is ARRAY (natural range <>) of INTEGER range -1 to 9;
+    
+    ------------------------------------------
+    
     constant C_ASCII_CODE_RANGE : INTEGER := 128;  -- 128 = 2^7 ASCII characters
     
     constant C_FONT_WIDTH_POW : INTEGER := 3;
@@ -30,6 +34,13 @@ package character_definition_pkg is
     
     constant C_FONT_HEIGHT_POW : INTEGER := 4;
     constant C_FONT_HEIGHT     : INTEGER := 2**C_FONT_HEIGHT_POW;  -- 16
+    
+    ------------------------------------------
+    
+    constant C_SPACE_CHAR : STD_LOGIC_VECTOR(6 downto 0) := b"010_0000";  -- x"20" ASCII code for ' '
+    constant C_ZERO_CHAR  : STD_LOGIC_VECTOR(6 downto 0) := b"011_0000";  -- x"30" ASCII code for '0'
+    
+    ------------------------------------------
     
     constant C_ARRAY_SIZE : INTEGER := C_ASCII_CODE_RANGE * C_FONT_HEIGHT;
     

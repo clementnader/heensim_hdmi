@@ -54,7 +54,7 @@ begin
     
     clock_divider_inst : clock_divider
         generic map (
-            G_NB_BITS_CLK_DIV => 20
+            G_NB_BITS_CLK_DIV => 19
         )
         port map (
             i_clk => i_clk,
