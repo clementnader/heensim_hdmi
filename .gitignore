@@ -5,5 +5,5 @@
 *.ip_user_files/
 *.runs/
 *.sim/
-**/ip/
+**/*ip/
 *.srcs/sim_*/

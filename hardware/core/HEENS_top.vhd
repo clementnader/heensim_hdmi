@@ -106,7 +106,7 @@ architecture Behavioral of HEENS_top is
     signal pixel_clk : STD_LOGIC;  -- pixel clock used for HDMI - @150 MHz
     
     -- Reset signal
-    signal reset : STD_LOGIC;  -- reset signal, it corresponds to BTNC
+    signal rst_pl : STD_LOGIC;  -- reset signal, it corresponds to BTNC
     
     -- State signals
     signal ph_init : STD_LOGIC;  -- initial phase
@@ -131,7 +131,7 @@ begin
     LD(2) <= ph_exec;
     LD(3) <= ph_dist;
     
-    reset <= BTNC;
+    rst_pl <= BTNC;
     
 --  ===================================================================================
 --  ------------------------------------ Z_INTERFACE ----------------------------------
@@ -144,7 +144,7 @@ begin
         )
         port map (
             i_clk          => heens_clk,
-            i_rst          => reset,
+            i_rst          => rst_pl,
             i_hdmi_rd_fifo => hdmi_rd_fifo,
             
             o_fifo_dout  => dout_input_fifo,
@@ -164,7 +164,7 @@ begin
         port map (
             i_heens_clk  => heens_clk,
             i_pixel_clk  => pixel_clk,
-            i_rst        => reset,
+            i_rst        => rst_pl,
             i_btnr       => BTNR,
             i_ph_dist    => ph_dist,
             i_fifo_empty => empty_input_fifo,
