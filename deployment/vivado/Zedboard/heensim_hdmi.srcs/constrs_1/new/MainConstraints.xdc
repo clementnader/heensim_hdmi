@@ -7,8 +7,8 @@
 # ----------------------------------------------------------------------------
 # Clock Source
 # ----------------------------------------------------------------------------
-set_property -dict {PACKAGE_PIN Y9   IOSTANDARD LVCMOS33} [get_ports GCLK];  # GCLK @100 MHz
-create_clock -period 10.000 -name GCLK [get_ports GCLK];
+set_property -dict {PACKAGE_PIN Y9   IOSTANDARD LVCMOS33} [get_ports GCLK];  # GCLK
+create_clock -period 10.000 -name GCLK [get_ports GCLK];  # GCLK @100 MHz
 
 # ----------------------------------------------------------------------------
 # HDMI Output
@@ -44,8 +44,9 @@ set_property -dict {PACKAGE_PIN Y16  IOSTANDARD LVCMOS33 PULLTYPE PULLUP} [get_p
 # ----------------------------------------------------------------------------
 # User Push Buttons
 # ----------------------------------------------------------------------------
+set_property -dict {PACKAGE_PIN N15  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNL];  # BTNL
 set_property -dict {PACKAGE_PIN P16  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNC];  # BTNC
-set_property -dict {PACKAGE_PIN R18  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNR];  # BTNR
+#set_property -dict {PACKAGE_PIN R18  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNR];  # BTNR
 
 # ----------------------------------------------------------------------------
 # User LEDs

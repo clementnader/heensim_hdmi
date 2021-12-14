@@ -7,11 +7,9 @@
 # ----------------------------------------------------------------------------
 # Clock Source
 # ----------------------------------------------------------------------------
-set_property -dict {PACKAGE_PIN H9   IOSTANDARD DIFF_HSTL_II_18} [get_ports GCLK_P];  # SYSCLK_P @200 MHz
-set_property -dict {PACKAGE_PIN G9   IOSTANDARD DIFF_HSTL_II_18} [get_ports GCLK_N];  # SYSCLK_N @200 MHz
-
-create_clock -period  8.000 -name clk     -waveform {0.000 5.000};  # clk     @125 MHz
-create_clock -period  6.667 -name clk_150 -waveform {0.000 5.000};  # clk_150 @150 MHz
+set_property -dict {PACKAGE_PIN H9   IOSTANDARD DIFF_HSTL_II_18} [get_ports GCLK_P];  # SYSCLK_P
+set_property -dict {PACKAGE_PIN G9   IOSTANDARD DIFF_HSTL_II_18} [get_ports GCLK_N];  # SYSCLK_N
+create_clock -period 5.000 -name GCLK_DIFF [get_ports GCLK_P];  # GCLK_DIFF @200 MHz
 
 # ----------------------------------------------------------------------------
 # HDMI Output
@@ -56,6 +54,7 @@ set_property -dict {PACKAGE_PIN AJ18 IOSTANDARD LVCMOS25 PULLTYPE PULLUP} [get_p
 # ----------------------------------------------------------------------------
 # User Push Buttons
 # ----------------------------------------------------------------------------
+set_property -dict {PACKAGE_PIN AK25 IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNL];  # GPIO_SW_LEFT
 set_property -dict {PACKAGE_PIN K15  IOSTANDARD LVCMOS18 PULLTYPE PULLDOWN} [get_ports BTNC];  # GPIO_SW_CENTER
 set_property -dict {PACKAGE_PIN R27  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNR];  # GPIO_SW_RIGHT
 
@@ -72,3 +71,17 @@ set_property -dict {PACKAGE_PIN A17  IOSTANDARD LVCMOS18} [get_ports LD[3]];  # 
 # ----------------------------------------------------------------------------
 set_property SEVERITY {Warning} [get_drc_checks NSTD-1]
 set_property SEVERITY {Warning} [get_drc_checks UCIO-1]
+
+# ----------------------------------------------------------------------------
+# MULTIBOARD - Aurora
+# ----------------------------------------------------------------------------
+####################### GT reference clock ###########################
+set_property -dict {PACKAGE_PIN AC8  IOSTANDARD DIFF_HSTL_II_18} [get_ports GTXQ2_P];
+set_property -dict {PACKAGE_PIN AC7  IOSTANDARD DIFF_HSTL_II_18} [get_ports GTXQ2_N];
+create_clock -period 8.000 -name GT_REFCLK1 [get_ports GTXQ2_P];  # GT_REFCLK1 @125.0MHz
+
+############################ GT LOC ##################################
+set_property LOC GTXE2_CHANNEL_X0Y9 [get_cells HEENSTopPL/MULTIBOARD_OP.z_aer_top_i/aurora_module_i/U0/gt_wrapper_i/aurora_8b10b_0_multi_gt_i/gt0_aurora_8b10b_0_i/gtxe2_i];
+
+########### CDC in RESET_LOGIC from INIT_CLK to USER_CLK #############
+set_false_path -to [get_pins -hier *aurora_8b10b_0_cdc_to*/D];

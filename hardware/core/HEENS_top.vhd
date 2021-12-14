@@ -24,9 +24,9 @@ library IEEE;
 
 entity HEENS_top is
     port (
-        GCLK           : in STD_LOGIC;  -- 100 MHz
-        GCLK_P, GCLK_N : in STD_LOGIC;  -- 200 MHz
-        BTNC, BTNR     : in STD_LOGIC;
+        GCLK             : in STD_LOGIC;  -- 100 MHz
+        GCLK_P, GCLK_N   : in STD_LOGIC;  -- 200 MHz
+        BTNL, BTNC, BTNR : in STD_LOGIC;
         
         LD         : out STD_LOGIC_VECTOR(3 downto 0);
         HDMI_CLK   : out STD_LOGIC;
@@ -69,7 +69,7 @@ architecture Behavioral of HEENS_top is
             i_heens_clk  : in STD_LOGIC;
             i_pixel_clk  : in STD_LOGIC;
             i_rst        : in STD_LOGIC;
-            i_btnr       : in STD_LOGIC;
+            i_btn        : in STD_LOGIC;
             i_ph_dist    : in STD_LOGIC;
             i_fifo_empty : in STD_LOGIC;
             i_fifo_valid : in STD_LOGIC;
@@ -106,7 +106,7 @@ architecture Behavioral of HEENS_top is
     signal pixel_clk : STD_LOGIC;  -- pixel clock used for HDMI - @150 MHz
     
     -- Reset signal
-    signal rst_pl : STD_LOGIC;  -- reset signal, it corresponds to BTNC
+    signal rst_pl : STD_LOGIC;  -- reset signal, it corresponds to BTNL
     
     -- State signals
     signal ph_init : STD_LOGIC;  -- initial phase
@@ -126,12 +126,12 @@ begin
 --  ---------------------------------------- I/O --------------------------------------
 --  ===================================================================================
     
+    rst_pl <= BTNL;
+    
     LD(0) <= ph_init;
     LD(1) <= ph_conf;
     LD(2) <= ph_exec;
     LD(3) <= ph_dist;
-    
-    rst_pl <= BTNC;
     
 --  ===================================================================================
 --  ------------------------------------ Z_INTERFACE ----------------------------------
@@ -165,7 +165,7 @@ begin
             i_heens_clk  => heens_clk,
             i_pixel_clk  => pixel_clk,
             i_rst        => rst_pl,
-            i_btnr       => BTNR,
+            i_btn        => BTNC,
             i_ph_dist    => ph_dist,
             i_fifo_empty => empty_input_fifo,
             i_fifo_valid => valid_input_fifo,

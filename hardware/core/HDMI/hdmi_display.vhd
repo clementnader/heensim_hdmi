@@ -30,7 +30,7 @@ entity hdmi_display is
         i_heens_clk  : in STD_LOGIC;
         i_pixel_clk  : in STD_LOGIC;
         i_rst        : in STD_LOGIC;
-        i_btnr       : in STD_LOGIC;
+        i_btn        : in STD_LOGIC;
         i_ph_dist    : in STD_LOGIC;
         i_fifo_empty : in STD_LOGIC;
         i_fifo_valid : in STD_LOGIC;
@@ -176,10 +176,10 @@ architecture Behavioral of hdmi_display is
     -----------------------------------------------------------------------------------
     
     -- Stabilized inputs
-    signal buff_btnr : STD_LOGIC;
+    signal buff_btn : STD_LOGIC;
     
     -- Extend vertical axis input signal
-    signal pixel_clk_extend_vaxis : STD_LOGIC;
+    signal extend_vaxis : STD_LOGIC;
     
     -- State signals
     signal pixel_clk_ph_dist : STD_LOGIC;
@@ -221,9 +221,9 @@ begin
         )
         port map (
             i_clk   => i_pixel_clk,
-            i_in(0) => i_btnr,
+            i_in(0) => i_btn,
             
-            o_out(0) => buff_btnr
+            o_out(0) => buff_btn
         );
     
     flip_flop_inputs_inst : flip_flop_inputs
@@ -233,9 +233,9 @@ begin
         port map (
             i_clk   => i_pixel_clk,
             i_rst   => i_rst,
-            i_in(0) => buff_btnr,
+            i_in(0) => buff_btn,
             
-            o_out(0) => pixel_clk_extend_vaxis
+            o_out(0) => extend_vaxis
         );
     
 --  ===================================================================================
@@ -319,7 +319,7 @@ begin
             i_hcounter      => color_hcounter,
             i_vcounter      => color_vcounter,
             i_mem_rd_data   => mem_rd_data,
-            i_extend_vaxis  => pixel_clk_extend_vaxis,
+            i_extend_vaxis  => extend_vaxis,
             i_transfer_done => pixel_clk_sp_fsm_transfer_done,
             
             o_hcounter    => plot_hcounter,
