@@ -30,13 +30,14 @@ library work;
 
 entity raster_plot is
     port (
-        i_clk               : in STD_LOGIC;
-        i_hcounter          : in STD_LOGIC_VECTOR(11 downto 0);
-        i_vcounter          : in STD_LOGIC_VECTOR(11 downto 0);
-        i_mem_rd_data       : in STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
-        i_current_timestamp : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
-        i_extend_vaxis      : in STD_LOGIC;
-        i_transfer_done     : in STD_LOGIC;
+        i_clk           : in STD_LOGIC;
+        i_rst           : in STD_LOGIC;
+        i_ph_dist       : in STD_LOGIC;
+        i_hcounter      : in STD_LOGIC_VECTOR(11 downto 0);
+        i_vcounter      : in STD_LOGIC_VECTOR(11 downto 0);
+        i_mem_rd_data   : in STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
+        i_extend_vaxis  : in STD_LOGIC;
+        i_transfer_done : in STD_LOGIC;
         
         o_hcounter    : out STD_LOGIC_VECTOR(11 downto 0);
         o_vcounter    : out STD_LOGIC_VECTOR(11 downto 0);
@@ -49,6 +50,18 @@ end raster_plot;
 
 
 architecture Behavioral of raster_plot is
+    
+    component get_current_timestamp
+        port ( 
+            i_clk     : in STD_LOGIC;
+            i_rst     : in STD_LOGIC;
+            i_ph_dist : in STD_LOGIC;
+            
+            o_current_timestamp : out STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0)
+        );
+    end component;
+    
+    -----------------------------------------------------------------------------------
     
     component write_info
         port (
@@ -124,9 +137,13 @@ architecture Behavioral of raster_plot is
     
     -----------------------------------------------------------------------------------
     
+    signal current_timestamp : STD_LOGIC_VECTOR (C_LENGTH_TIMESTAMP-1 downto 0);
+    
+    -----------------------------------------------------------------------------------
+    
     -- Time-related signals, they update only once per display
-    signal pointer0          : STD_LOGIC_VECTOR(9 downto 0);   -- pointer in the memory to the oldest timestamp
-    signal current_timestamp : STD_LOGIC_VECTOR(31 downto 0);  -- current timestamp that updates only once per display
+    signal pointer0               : STD_LOGIC_VECTOR(9 downto 0);   -- pointer in the memory to the oldest timestamp
+    signal plot_current_timestamp : STD_LOGIC_VECTOR(31 downto 0);  -- current timestamp that updates only once per display
     
     -- Signal that converts the vertical position to the correspondant neuron ID
     signal shifted_vcounter : INTEGER range 0 to C_RANGE_ID-1;
@@ -177,6 +194,17 @@ architecture Behavioral of raster_plot is
     
 begin
     
+    get_current_timestamp_inst_pixel_clk : get_current_timestamp
+        port map ( 
+            i_clk     => i_clk,
+            i_rst     => i_rst,
+            i_ph_dist => i_ph_dist,
+            
+            o_current_timestamp => current_timestamp
+        );
+    
+    -----------------------------------------------------------------------------------
+    
     write_info_inst : write_info
         port map (
             i_clk      => i_clk,
@@ -222,7 +250,7 @@ begin
             i_clk               => i_clk,
             i_hcounter          => i_hcounter,
             i_vcounter          => i_vcounter,
-            i_current_timestamp => i_current_timestamp,
+            i_current_timestamp => current_timestamp,
             
             o_time_label_pixel => time_label_pixel,
             o_time_pixel       => time_pixel,
@@ -249,20 +277,20 @@ begin
             
             last_transfer_done <= i_transfer_done;
             if last_transfer_done = '0' and i_transfer_done = '1' then  -- rising edge
-                current_timestamp <= i_current_timestamp;
-                if i_current_timestamp(31 downto 10) = 0 then  -- the memory has not been written fully
+                plot_current_timestamp <= current_timestamp;
+                if current_timestamp(31 downto 10) = 0 then  -- the memory has not been written fully
                     pointer0 <= (others => '0');
                 else
-                    pointer0 <= i_current_timestamp(pointer0'high downto 0) + 1;
+                    pointer0 <= current_timestamp(pointer0'high downto 0) + 1;
                 end if;
             end if;
             
             if i_hcounter = 0 and i_vcounter = 0 then
                 -- Initialization
                 o_end_screen <= '0';
-                if i_current_timestamp = 0 then
-                    current_timestamp <= (others => '0');
-                    pointer0   <= (others => '0');
+                if current_timestamp = 0 then
+                    plot_current_timestamp <= (others => '0');
+                    pointer0               <= (others => '0');
                 end if;
             elsif i_hcounter = C_H_VISIBLE and i_vcounter = C_V_VISIBLE then
                 -- End of visible screen
@@ -422,7 +450,7 @@ begin
                 
                 -- Plot dots for the corresponding spike (+ shape)
                 --     Middle, up and down points
-                if current_timestamp(31 downto 10) /= 0 or current_timestamp >= i_hcounter-C_H_LOW_LIMIT then
+                if plot_current_timestamp(31 downto 10) /= 0 or plot_current_timestamp >= i_hcounter-C_H_LOW_LIMIT then
                     if extend_vaxis = '1' then
                         if intermed_vcnt /= "00" and mem_column_current(shifted_vcounter) = '1' then
                             o_color <= C_BLUE;
@@ -436,7 +464,7 @@ begin
                     end if;
                 end if;
                 --     Left points
-                if current_timestamp(31 downto 10) /= 0 or current_timestamp >= i_hcounter-C_H_LOW_LIMIT+1 then
+                if plot_current_timestamp(31 downto 10) /= 0 or plot_current_timestamp >= i_hcounter-C_H_LOW_LIMIT+1 then
                     if extend_vaxis = '1' then
                         if intermed_vcnt = "10" and i_mem_rd_data(shifted_vcounter) = '1' then
                             o_color <= C_BLUE;
@@ -448,7 +476,7 @@ begin
                     end if;
                 end if;
                 --     Right points
-                if current_timestamp(31 downto 10) /= 0 or current_timestamp >= i_hcounter-C_H_LOW_LIMIT-1 then
+                if plot_current_timestamp(31 downto 10) /= 0 or plot_current_timestamp >= i_hcounter-C_H_LOW_LIMIT-1 then
                     if extend_vaxis = '1' then
                         if intermed_vcnt = "10" and mem_column_before(shifted_vcounter) = '1' then
                             o_color <= C_BLUE;

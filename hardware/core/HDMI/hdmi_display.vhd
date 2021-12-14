@@ -92,28 +92,15 @@ architecture Behavioral of hdmi_display is
     
     -----------------------------------------------------------------------------------
     
-    component get_current_timestamp
-        port ( 
-            i_clk     : in STD_LOGIC;
-            i_rst     : in STD_LOGIC;
-            i_ph_dist : in STD_LOGIC;
-            
-            o_current_timestamp : out STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0)
-        );
-    end component;
-    
-    -----------------------------------------------------------------------------------
-    
     component read_fifo_spikes
         port (
-            i_clk               : in STD_LOGIC;
-            i_rst               : in STD_LOGIC;
-            i_ph_dist           : in STD_LOGIC;
-            i_current_timestamp : in STD_LOGIC_VECTOR (C_LENGTH_TIMESTAMP-1 downto 0);
-            i_fifo_empty        : in STD_LOGIC;
-            i_fifo_valid        : in STD_LOGIC;
-            i_fifo_dout         : in STD_LOGIC_VECTOR(17 downto 0);
-            i_end_screen        : in STD_LOGIC;
+            i_clk        : in STD_LOGIC;
+            i_rst        : in STD_LOGIC;
+            i_ph_dist    : in STD_LOGIC;
+            i_fifo_empty : in STD_LOGIC;
+            i_fifo_valid : in STD_LOGIC;
+            i_fifo_dout  : in STD_LOGIC_VECTOR(17 downto 0);
+            i_end_screen : in STD_LOGIC;
             
             o_hdmi_rd_fifo  : out STD_LOGIC;
             o_mem_wr_en     : out STD_LOGIC;
@@ -146,13 +133,14 @@ architecture Behavioral of hdmi_display is
     
     component raster_plot
         port (
-            i_clk               : in STD_LOGIC;
-            i_hcounter          : in STD_LOGIC_VECTOR(11 downto 0);
-            i_vcounter          : in STD_LOGIC_VECTOR(11 downto 0);
-            i_mem_rd_data       : in STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
-            i_current_timestamp : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
-            i_extend_vaxis      : in STD_LOGIC;
-            i_transfer_done     : in STD_LOGIC;
+            i_clk           : in STD_LOGIC;
+            i_rst           : in STD_LOGIC;
+            i_ph_dist       : in STD_LOGIC;
+            i_hcounter      : in STD_LOGIC_VECTOR(11 downto 0);
+            i_vcounter      : in STD_LOGIC_VECTOR(11 downto 0);
+            i_mem_rd_data   : in STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
+            i_extend_vaxis  : in STD_LOGIC;
+            i_transfer_done : in STD_LOGIC;
             
             o_hcounter    : out STD_LOGIC_VECTOR(11 downto 0);
             o_vcounter    : out STD_LOGIC_VECTOR(11 downto 0);
@@ -186,10 +174,6 @@ architecture Behavioral of hdmi_display is
     end component;
     
     -----------------------------------------------------------------------------------
-    
-    -- Current time
-    signal heens_clk_current_timestamp : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
-    signal pixel_clk_current_timestamp : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
     
     -- Stabilized inputs
     signal buff_btnr : STD_LOGIC;
@@ -288,25 +272,15 @@ begin
 --  ------------------ Read the spikes FIFO and store it in memory --------------------
 --  ===================================================================================
     
-    get_current_timestamp_inst_heens_clk : get_current_timestamp
-        port map ( 
-            i_clk     => i_heens_clk,
-            i_rst     => i_rst,
-            i_ph_dist => i_ph_dist,
-            
-            o_current_timestamp => heens_clk_current_timestamp
-        );
-    
     read_fifo_spikes_inst : read_fifo_spikes
         port map (
-            i_clk               => i_heens_clk,
-            i_rst               => i_rst,
-            i_ph_dist           => i_ph_dist,
-            i_current_timestamp => heens_clk_current_timestamp,
-            i_fifo_empty        => i_fifo_empty,
-            i_fifo_valid        => i_fifo_valid,
-            i_fifo_dout         => i_fifo_dout,
-            i_end_screen        => heens_clk_plot_end_screen,
+            i_clk        => i_heens_clk,
+            i_rst        => i_rst,
+            i_ph_dist    => i_ph_dist,
+            i_fifo_empty => i_fifo_empty,
+            i_fifo_valid => i_fifo_valid,
+            i_fifo_dout  => i_fifo_dout,
+            i_end_screen => heens_clk_plot_end_screen,
             
             o_hdmi_rd_fifo  => o_hdmi_rd_fifo,
             o_mem_wr_en     => mem_wr_en,
@@ -337,24 +311,16 @@ begin
 --  ------------------- Read the memory and create the Raster plot --------------------
 --  ===================================================================================
     
-    get_current_timestamp_inst_pixel_clk : get_current_timestamp
-        port map ( 
-            i_clk     => i_pixel_clk,
-            i_rst     => i_rst,
-            i_ph_dist => pixel_clk_ph_dist,
-            
-            o_current_timestamp => pixel_clk_current_timestamp
-        );
-    
     raster_plot_inst : raster_plot
         port map (
-            i_clk               => i_pixel_clk,
-            i_hcounter          => color_hcounter,
-            i_vcounter          => color_vcounter,
-            i_mem_rd_data       => mem_rd_data,
-            i_current_timestamp => pixel_clk_current_timestamp,
-            i_extend_vaxis      => pixel_clk_extend_vaxis,
-            i_transfer_done     => pixel_clk_sp_fsm_transfer_done,
+            i_clk           => i_pixel_clk,
+            i_rst           => i_rst,
+            i_ph_dist       => i_ph_dist,
+            i_hcounter      => color_hcounter,
+            i_vcounter      => color_vcounter,
+            i_mem_rd_data   => mem_rd_data,
+            i_extend_vaxis  => pixel_clk_extend_vaxis,
+            i_transfer_done => pixel_clk_sp_fsm_transfer_done,
             
             o_hcounter    => plot_hcounter,
             o_vcounter    => plot_vcounter,

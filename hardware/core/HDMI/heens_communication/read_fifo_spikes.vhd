@@ -30,14 +30,13 @@ library work;
 
 entity read_fifo_spikes is
     port (
-        i_clk               : in STD_LOGIC;
-        i_rst               : in STD_LOGIC;
-        i_ph_dist           : in STD_LOGIC;
-        i_current_timestamp : in STD_LOGIC_VECTOR (C_LENGTH_TIMESTAMP-1 downto 0);
-        i_fifo_empty        : in STD_LOGIC;
-        i_fifo_valid        : in STD_LOGIC;
-        i_fifo_dout         : in STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
-        i_end_screen        : in STD_LOGIC;
+        i_clk        : in STD_LOGIC;
+        i_rst        : in STD_LOGIC;
+        i_ph_dist    : in STD_LOGIC;
+        i_fifo_empty : in STD_LOGIC;
+        i_fifo_valid : in STD_LOGIC;
+        i_fifo_dout  : in STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
+        i_end_screen : in STD_LOGIC;
         
         o_hdmi_rd_fifo  : out STD_LOGIC;
         o_mem_wr_en     : out STD_LOGIC;
@@ -60,6 +59,18 @@ architecture Behavioral of read_fifo_spikes is
             dina  : in STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
             
             douta : out STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0)
+        );
+    end component;
+    
+    -----------------------------------------------------------------------------------
+    
+    component get_current_timestamp
+        port ( 
+            i_clk     : in STD_LOGIC;
+            i_rst     : in STD_LOGIC;
+            i_ph_dist : in STD_LOGIC;
+            
+            o_current_timestamp : out STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0)
         );
     end component;
     
@@ -91,6 +102,10 @@ architecture Behavioral of read_fifo_spikes is
     );
     
     signal fifo_rd_state : T_FIFO_RD_STATE := IDLE;
+    
+    -----------------------------------------------------------------------------------
+    
+    signal current_timestamp : STD_LOGIC_VECTOR (C_LENGTH_TIMESTAMP-1 downto 0);
     
     -----------------------------------------------------------------------------------
     
@@ -132,6 +147,17 @@ begin
             dina   => buffer_din,
             
             douta => buffer_dout
+        );
+    
+    -----------------------------------------------------------------------------------
+    
+    get_current_timestamp_inst : get_current_timestamp
+        port map ( 
+            i_clk     => i_clk,
+            i_rst     => i_rst,
+            i_ph_dist => i_ph_dist,
+            
+            o_current_timestamp => current_timestamp
         );
     
     -----------------------------------------------------------------------------------
@@ -240,7 +266,7 @@ begin
                             
                         elsif transfer_from_buffer = '1' then
                             transfer_read_flag <= '1';
-                            transfer_addr      <= i_current_timestamp(transfer_addr'high downto 0) - (buffer_cnt-1);
+                            transfer_addr      <= current_timestamp(transfer_addr'high downto 0) - (buffer_cnt-1);
                             transfer_rd_delay  <= '0';
                             buffer_en          <= '1';
                             buffer_addr        <= (others => '0');
