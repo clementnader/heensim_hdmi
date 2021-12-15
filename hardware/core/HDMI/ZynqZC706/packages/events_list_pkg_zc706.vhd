@@ -50,7 +50,7 @@ package events_list_pkg is
     
     function get_id_value (
         neuron_id : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0)
-    ) return STD_LOGIC_VECTOR;
+    ) return INTEGER;
     
 end package;
 
@@ -59,12 +59,18 @@ package body events_list_pkg is
     
     function get_id_value (
         neuron_id : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0)
-    ) return STD_LOGIC_VECTOR is
-            variable chip_id  : STD_LOGIC_VECTOR(C_LENGTH_CHIP_ID-1   downto 0);
-            variable virt     : STD_LOGIC_VECTOR(C_LENGTH_VIRT-1      downto 0);
-            variable row      : STD_LOGIC_VECTOR(C_LENGTH_ROW-1       downto 0);
-            variable column   : STD_LOGIC_VECTOR(C_LENGTH_COLUMN-1    downto 0);
-            variable id_value : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID+2 downto 0);
+    ) return INTEGER is
+            variable chip_id : STD_LOGIC_VECTOR(C_LENGTH_CHIP_ID-1 downto 0);
+            variable virt    : STD_LOGIC_VECTOR(C_LENGTH_VIRT-1    downto 0);
+            variable row     : STD_LOGIC_VECTOR(C_LENGTH_ROW-1     downto 0);
+            variable column  : STD_LOGIC_VECTOR(C_LENGTH_COLUMN-1  downto 0);
+            
+            variable nb_chip_id : INTEGER range 0 to C_MAX_CHIP_ID-1;
+            variable nb_virt    : INTEGER range 0 to C_MAX_VIRT;
+            variable nb_row     : INTEGER range 0 to C_MAX_ROW;
+            variable nb_column  : INTEGER range 0 to C_MAX_COLUMN;
+            
+            variable id_value : INTEGER range 0 to C_MAX_ID-1;
             
             constant C_LOW_CHIP_ID : INTEGER := C_LENGTH_NEURON_ID-C_LENGTH_CHIP_ID;
             constant C_LOW_VIRT    : INTEGER := C_LOW_CHIP_ID-C_LENGTH_VIRT;
@@ -76,12 +82,17 @@ package body events_list_pkg is
             row     := neuron_id(C_LOW_VIRT-1         downto C_LOW_ROW);
             column  := neuron_id(C_LOW_ROW-1          downto 0);
             
-            id_value := column
-                + std_logic_vector(to_unsigned(C_MAX_COLUMN+1, C_LENGTH_COLUMN+1)) * (row
-                + std_logic_vector(to_unsigned(C_MAX_ROW+1,    C_LENGTH_ROW+1))    * (virt
-                + std_logic_vector(to_unsigned(C_MAX_VIRT+1,   C_LENGTH_VIRT+1))   * (chip_id-1)));
+            nb_chip_id := to_integer(unsigned(chip_id-1));
+            nb_virt    := to_integer(unsigned(virt));
+            nb_row     := to_integer(unsigned(row));
+            nb_column  := to_integer(unsigned(column));
             
-            return id_value(C_LENGTH_NEURON_ID-1 downto 0);
+            id_value := nb_column
+                + (C_MAX_COLUMN+1) * (nb_row
+                + (C_MAX_ROW+1)    * (nb_virt
+                + (C_MAX_VIRT+1)   * (nb_chip_id)));
+            
+            return id_value;
         
     end function;
     

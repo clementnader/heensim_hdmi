@@ -6,4 +6,4 @@
 *.runs/
 *.sim/
 **/*ip/
-*.srcs/sim_*/
+**/*.srcs/sim_*/

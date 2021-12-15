@@ -315,7 +315,7 @@ begin
         port map (
             i_clk           => i_pixel_clk,
             i_rst           => i_rst,
-            i_ph_dist       => i_ph_dist,
+            i_ph_dist       => pixel_clk_ph_dist,
             i_hcounter      => color_hcounter,
             i_vcounter      => color_vcounter,
             i_mem_rd_data   => mem_rd_data,
