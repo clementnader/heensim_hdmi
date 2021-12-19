@@ -23,7 +23,7 @@ library IEEE;
     use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 library work;
-    use work.events_list_pkg.ALL;
+    use work.neurons_pkg.ALL;
 
 
 entity get_current_timestamp is
@@ -32,14 +32,14 @@ entity get_current_timestamp is
         i_rst     : in STD_LOGIC;
         i_ph_dist : in STD_LOGIC;
         
-        o_current_timestamp : out STD_LOGIC_VECTOR (C_LENGTH_TIMESTAMP-1 downto 0)
+        o_current_timestamp : out STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0)
     );
 end get_current_timestamp;
 
 
 architecture Behavioral of get_current_timestamp is
     
-    signal current_timestamp : STD_LOGIC_VECTOR (C_LENGTH_TIMESTAMP-1 downto 0) := (others => '0');
+    signal current_timestamp : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0) := (others => '0');
     
     signal last_ph_dist : STD_LOGIC;
     

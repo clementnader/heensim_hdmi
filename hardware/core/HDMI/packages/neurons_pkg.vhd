@@ -2,8 +2,9 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 10/05/2021 12:07:46 PM
--- Package Name: events_list_pkg
+-- Create Date: 12/15/2021 07:59:23 PM
+-- Design Name: 
+-- Package Name: neurons_pkg
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 
@@ -22,18 +23,22 @@ library IEEE;
     use IEEE.STD_LOGIC_UNSIGNED.ALL;
     use IEEE.NUMERIC_STD.ALL;
 
+library work;
+    use work.SNN_pkg.ALL;
 
-package events_list_pkg is
+
+package neurons_pkg is
     
-    -- ZedBoard
-    constant C_PLATFORM_NAME : STRING := "ZedBoard";
+--    constant C_RANGE_ID            : INTEGER := 968;
+    constant C_RANGE_ID            : INTEGER := 200;
+    constant C_RANGE_ID_SMALL_PLOT : INTEGER := 200;
+    
+    ------------------------------------------
     
     constant C_MAX_CHIP_ID : INTEGER := 1;
-    constant C_MAX_VIRT    : INTEGER := 7;
-    constant C_MAX_ROW     : INTEGER := 4;
-    constant C_MAX_COLUMN  : INTEGER := 4;
-    
-    constant C_RANGE_ID : INTEGER := 200;
+    constant C_MAX_VIRT    : INTEGER := max_neuron_v;
+    constant C_MAX_ROW     : INTEGER := size_x_1;
+    constant C_MAX_COLUMN  : INTEGER := size_y_1;
     
     constant C_MAX_ID : INTEGER := C_MAX_COLUMN
         + (C_MAX_COLUMN+1) * (C_MAX_ROW
@@ -59,8 +64,7 @@ package events_list_pkg is
     
 end package;
 
-
-package body events_list_pkg is
+package body neurons_pkg is
     
     function get_id_value (
         neuron_id : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0)
@@ -75,7 +79,7 @@ package body events_list_pkg is
             variable nb_row     : INTEGER range 0 to C_MAX_ROW;
             variable nb_column  : INTEGER range 0 to C_MAX_COLUMN;
             
-            variable id_value : INTEGER range 0 to C_MAX_ID-1;
+            variable id_value : INTEGER range 0 to C_MAX_ID;
             
             constant C_LOW_CHIP_ID : INTEGER := C_LENGTH_NEURON_ID-C_LENGTH_CHIP_ID;
             constant C_LOW_VIRT    : INTEGER := C_LOW_CHIP_ID-C_LENGTH_VIRT;

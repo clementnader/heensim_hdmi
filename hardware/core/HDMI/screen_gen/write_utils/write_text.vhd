@@ -2,9 +2,9 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 11/19/2021 02:47:15 PM
+-- Create Date: 11/18/2021 03:37:31 PM
 -- Design Name: 
--- Module Name: write_text_rotated - Behavioral
+-- Module Name: write_text - Behavioral
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 
@@ -27,7 +27,7 @@ library work;
     use work.character_definition_pkg.ALL;
 
 
-entity write_text_rotated is
+entity write_text is
     generic (
        G_TEXT_LENGTH : INTEGER
     );
@@ -40,17 +40,17 @@ entity write_text_rotated is
         i_hcounter     : in STD_LOGIC_VECTOR(11 downto 0);  -- current pixel horizontal position
         i_vcounter     : in STD_LOGIC_VECTOR(11 downto 0);  -- current pixel vertical position
         
-        o_pixel : out STD_LOGIC
+        o_pixel : out BOOLEAN
     );
-end write_text_rotated;
+end write_text;
 
 
-architecture Behavioral of write_text_rotated is
+architecture Behavioral of write_text is
     
     signal shifted_hpos : STD_LOGIC_VECTOR(11 downto 0);
     signal shifted_vpos : STD_LOGIC_VECTOR(11 downto 0);
     
-    signal char_pos_in_text : INTEGER range 0 to G_TEXT_LENGTH-1;  -- the position of a character in the given text
+    signal char_pos_in_text : INTEGER range 1 to G_TEXT_LENGTH;  -- the position of a character in the given text
     signal col_pos_in_char  : INTEGER range 0 to C_FONT_WIDTH-1;   -- the column position in a character
     signal char_code        : STD_LOGIC_VECTOR(6 downto 0);        -- character ASCII code
     
@@ -62,13 +62,13 @@ begin
     shifted_hpos <= i_hcounter - i_text_hpos;
     shifted_vpos <= i_vcounter - i_text_vpos;
     
-    char_pos_in_text <= to_integer(unsigned(shifted_vpos(11 downto C_FONT_WIDTH_POW)));
-    col_pos_in_char  <= to_integer(unsigned(shifted_vpos(C_FONT_WIDTH_POW-1 downto 0)));
+    char_pos_in_text <= to_integer(unsigned(shifted_hpos(11 downto C_FONT_WIDTH_POW) + 1));
+    col_pos_in_char  <= to_integer(unsigned(shifted_hpos(C_FONT_WIDTH_POW-1 downto 0)));
     
-    char_code <= std_logic_vector(to_unsigned(character'pos(i_display_text(G_TEXT_LENGTH - char_pos_in_text)), 7)) when i_do_display  -- gives the ASCII code of a character
+    char_code <= std_logic_vector(to_unsigned(character'pos(i_display_text(char_pos_in_text)), 7)) when i_do_display  -- gives the ASCII code of a character
             else C_SPACE_CHAR;
     
-    row_addr_in_table <= char_code & shifted_hpos(3 downto 0);
+    row_addr_in_table <= char_code & shifted_vpos(3 downto 0);
     
     -----------------------------------------------------------------------------------
     
@@ -87,13 +87,13 @@ begin
     begin
         if rising_edge(i_clk) then
             
-            o_pixel <= '0';
+            o_pixel <= False;
             
-            if (i_hcounter >= i_text_hpos and i_hcounter < i_text_hpos + C_FONT_HEIGHT)
-             and (i_vcounter >= i_text_vpos and i_vcounter < i_text_vpos + (C_FONT_WIDTH * G_TEXT_LENGTH)) then
+            if (i_hcounter >= i_text_hpos and i_hcounter < i_text_hpos + (C_FONT_WIDTH * G_TEXT_LENGTH))
+             and (i_vcounter >= i_text_vpos and i_vcounter < i_text_vpos + C_FONT_HEIGHT) then
                 
-                if current_char_row(col_pos_in_char) = '1' then
-                    o_pixel <= '1';
+                if current_char_row(C_FONT_WIDTH-1 - col_pos_in_char) = '1' then
+                    o_pixel <= True;
                 end if;
                 
             end if;

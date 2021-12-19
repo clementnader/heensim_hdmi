@@ -4,7 +4,7 @@
 -- 
 -- Create Date: 11/22/2021 05:47:45 PM
 -- Design Name: 
--- Module Name: write_axes - Behavioral
+-- Module Name: write_axes_and_ticks_label - Behavioral
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 
@@ -23,27 +23,24 @@ library IEEE;
     use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 library work;
-    use work.events_list_pkg.ALL;
-    use work.raster_plot_pkg.ALL;
     use work.character_definition_pkg.ALL;
+    use work.plot_pkg.ALL;
 
 
-entity write_axes is
+entity write_axes_and_ticks_label is
     port (
         i_clk          : in STD_LOGIC;
         i_hcounter     : in STD_LOGIC_VECTOR(11 downto 0);
         i_vcounter     : in STD_LOGIC_VECTOR(11 downto 0);
         i_extend_vaxis : in STD_LOGIC;
         
-        o_h_tick_pixel  : out STD_LOGIC;
-        o_v_tick_pixel  : out STD_LOGIC;
-        o_h_label_pixel : out STD_LOGIC;
-        o_v_label_pixel : out STD_LOGIC
+        o_axes_label_pixel  : out BOOLEAN;
+        o_ticks_label_pixel : out BOOLEAN
     );
-end write_axes;
+end write_axes_and_ticks_label;
 
 
-architecture Behavioral of write_axes is
+architecture Behavioral of write_axes_and_ticks_label is
     
     component write_text
         generic (
@@ -58,7 +55,7 @@ architecture Behavioral of write_axes is
             i_hcounter     : in STD_LOGIC_VECTOR(11 downto 0);
             i_vcounter     : in STD_LOGIC_VECTOR(11 downto 0);
             
-            o_pixel : out STD_LOGIC
+            o_pixel : out BOOLEAN
         );
     end component;
     
@@ -75,7 +72,7 @@ architecture Behavioral of write_axes is
             i_hcounter     : in STD_LOGIC_VECTOR(11 downto 0);
             i_vcounter     : in STD_LOGIC_VECTOR(11 downto 0);
             
-            o_pixel : out STD_LOGIC
+            o_pixel : out BOOLEAN
         );
     end component;
     
@@ -90,6 +87,7 @@ architecture Behavioral of write_axes is
     type T_LABEL_POS     is ARRAY(NATURAL range <>) of STD_LOGIC_VECTOR(11 downto 0);
     type T_STRING_ARRAY  is ARRAY(NATURAL range <>) of STRING;
     type T_INTEGER_ARRAY is ARRAY(NATURAL range <>) of INTEGER;
+    type T_BOOLEAN_ARRAY is ARRAY(NATURAL range <>) of BOOLEAN;
     
     -----------------------------------------------------------------------------------
     
@@ -116,7 +114,7 @@ architecture Behavioral of write_axes is
     
     signal h_tick_vpos : STD_LOGIC_VECTOR(11 downto 0);
     
-    signal h_ticks_pixel : STD_LOGIC_VECTOR(0 to 10);
+    signal h_ticks_pixel : T_BOOLEAN_ARRAY(0 to 10);
     
     -----------------------------------------------------------------------------------
     
@@ -178,7 +176,7 @@ architecture Behavioral of write_axes is
     
     signal v_tick_vpos : T_LABEL_POS(0 to C_NB_TICK_LABEL-1);
     
-    signal v_ticks_pixel : STD_LOGIC_VECTOR(0 to C_NB_TICK_LABEL-1);
+    signal v_ticks_pixel : T_BOOLEAN_ARRAY(0 to C_NB_TICK_LABEL-1);
     
     -----------------------------------------------------------------------------------
     
@@ -190,6 +188,8 @@ architecture Behavioral of write_axes is
     
     signal h_label_vpos : STD_LOGIC_VECTOR(11 downto 0);
     
+    signal h_label_pixel : BOOLEAN;
+    
     -- Labels on vertical axis
     constant C_V_LABEL : STRING := "neuron";
     
@@ -200,10 +200,15 @@ architecture Behavioral of write_axes is
     
     signal v_label_vpos : STD_LOGIC_VECTOR(11 downto 0);
     
+    signal v_label_pixel : BOOLEAN;
+    
 begin
     
-    o_h_tick_pixel <= '1' when h_ticks_pixel /= 0 else '0';
-    o_v_tick_pixel <= '1' when v_ticks_pixel /= 0 else '0';
+    o_axes_label_pixel <= True when h_ticks_pixel /= (h_ticks_pixel'range => False)
+                                 or v_ticks_pixel /= (v_ticks_pixel'range => False)
+                     else False;
+    
+    o_ticks_label_pixel <= h_label_pixel or v_label_pixel;
     
     -----------------------------------------------------------------------------------
     
@@ -265,7 +270,7 @@ begin
             i_hcounter     => i_hcounter,
             i_vcounter     => i_vcounter,
             
-            o_pixel => o_h_label_pixel
+            o_pixel => h_label_pixel
         );
     
     v_label_vpos <= C_V_MIDDLE_PLOT_EXT - C_FONT_WIDTH/2*6 - 4 when i_extend_vaxis = '1'
@@ -283,7 +288,7 @@ begin
             i_hcounter     => i_hcounter,
             i_vcounter     => i_vcounter,
             
-            o_pixel => o_v_label_pixel
+            o_pixel => v_label_pixel
         );
     
 end Behavioral;

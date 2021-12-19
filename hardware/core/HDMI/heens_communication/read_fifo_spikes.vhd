@@ -25,7 +25,7 @@ library IEEE;
     use IEEE.NUMERIC_STD.ALL;
 
 library work;
-    use work.events_list_pkg.ALL;
+    use work.neurons_pkg.ALL;
 
 
 entity read_fifo_spikes is
@@ -80,7 +80,7 @@ architecture Behavioral of read_fifo_spikes is
     
     -- Add a one in the memory at the position that corresponds to the neuron
     function convert_neuron_id (
-        id_value   : INTEGER range 0 to C_RANGE_ID-1;
+        id_value   : INTEGER range 0 to C_MAX_ID;
         old_memory : STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0)
     ) return STD_LOGIC_VECTOR is
             variable new_memory   : STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
@@ -112,7 +112,7 @@ architecture Behavioral of read_fifo_spikes is
     -----------------------------------------------------------------------------------
     
     signal neuron_id  : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
-    signal id_value   : INTEGER range 0 to C_RANGE_ID-1;
+    signal id_value   : INTEGER range 0 to C_MAX_ID;
     
     signal buffer_en   : STD_LOGIC;
     signal buffer_we   : STD_LOGIC;

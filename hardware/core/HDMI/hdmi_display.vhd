@@ -22,7 +22,7 @@ library IEEE;
     use IEEE.STD_LOGIC_1164.ALL;
 
 library work;
-    use work.events_list_pkg.ALL;
+    use work.neurons_pkg.ALL;
 
 
 entity hdmi_display is
@@ -131,7 +131,7 @@ architecture Behavioral of hdmi_display is
     
     -----------------------------------------------------------------------------------
     
-    component raster_plot
+    component generate_screen
         port (
             i_clk           : in STD_LOGIC;
             i_rst           : in STD_LOGIC;
@@ -174,6 +174,9 @@ architecture Behavioral of hdmi_display is
     end component;
     
     -----------------------------------------------------------------------------------
+    
+    -- Reset signal
+    signal pixel_clk_rst : STD_LOGIC;
     
     -- Stabilized inputs
     signal buff_btn : STD_LOGIC;
@@ -232,7 +235,7 @@ begin
         )
         port map (
             i_clk   => i_pixel_clk,
-            i_rst   => i_rst,
+            i_rst   => '0',
             i_in(0) => buff_btn,
             
             o_out(0) => extend_vaxis
@@ -256,16 +259,18 @@ begin
     
     synchronize_bits_inst_pixel_clk : synchronize_bits
         generic map (
-            G_NB_INPUTS => 2
+            G_NB_INPUTS => 3
         )
         port map (
             i_src_clk => i_heens_clk,
-            i_src(0)  => i_ph_dist,
-            i_src(1)  => heens_clk_sp_fsm_transfer_done,
+            i_src(0)  => i_rst,
+            i_src(1)  => i_ph_dist,
+            i_src(2)  => heens_clk_sp_fsm_transfer_done,
             
             i_dest_clk => i_pixel_clk,
-            o_dest(0)  => pixel_clk_ph_dist,
-            o_dest(1)  => pixel_clk_sp_fsm_transfer_done
+            o_dest(0)  => pixel_clk_rst,
+            o_dest(1)  => pixel_clk_ph_dist,
+            o_dest(2)  => pixel_clk_sp_fsm_transfer_done
         );
     
 --  ===================================================================================
@@ -311,7 +316,7 @@ begin
 --  ------------------- Read the memory and create the Raster plot --------------------
 --  ===================================================================================
     
-    raster_plot_inst : raster_plot
+    generate_screen_inst : generate_screen
         port map (
             i_clk           => i_pixel_clk,
             i_rst           => i_rst,

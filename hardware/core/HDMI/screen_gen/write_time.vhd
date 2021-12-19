@@ -23,7 +23,7 @@ library IEEE;
     use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 library work;
-    use work.events_list_pkg.ALL;
+    use work.neurons_pkg.ALL;
     use work.character_definition_pkg.ALL;
 
 
@@ -34,9 +34,9 @@ entity write_time is
         i_vcounter          : in STD_LOGIC_VECTOR(11 downto 0);
         i_current_timestamp : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
         
-        o_time_label_pixel : out STD_LOGIC;
-        o_time_pixel       : out STD_LOGIC;
-        o_time_val_pixel   : out STD_LOGIC
+        o_time_label_pixel : out BOOLEAN;
+        o_time_pixel       : out BOOLEAN;
+        o_time_val_pixel   : out BOOLEAN
     );
 end write_time;
 
@@ -56,7 +56,7 @@ architecture Behavioral of write_time is
             i_hcounter     : in STD_LOGIC_VECTOR(11 downto 0);
             i_vcounter     : in STD_LOGIC_VECTOR(11 downto 0);
             
-            o_pixel : out STD_LOGIC
+            o_pixel : out BOOLEAN
         );
     end component;
     
@@ -73,7 +73,7 @@ architecture Behavioral of write_time is
             i_hcounter    : in STD_LOGIC_VECTOR(11 downto 0);  -- current pixel horizontal position
             i_vcounter    : in STD_LOGIC_VECTOR(11 downto 0);  -- current pixel vertical position
             
-            o_pixel : out STD_LOGIC
+            o_pixel : out BOOLEAN
         );
     end component;
     
@@ -108,8 +108,8 @@ architecture Behavioral of write_time is
     );
     
     signal time_day_bool      : BOOLEAN;
-    signal time_day_pixel     : STD_LOGIC;
-    signal time_day_val_pixel : STD_LOGIC;
+    signal time_day_pixel     : BOOLEAN;
+    signal time_day_val_pixel : BOOLEAN;
     
     -----------------------------------------------------------------------------------
     
@@ -126,8 +126,8 @@ architecture Behavioral of write_time is
     signal h_time_hr_i       : INTEGER range 0 to 1;
     
     signal time_hr_bool      : BOOLEAN;
-    signal time_hr_pixel     : STD_LOGIC;
-    signal time_hr_val_pixel : STD_LOGIC;
+    signal time_hr_pixel     : BOOLEAN;
+    signal time_hr_val_pixel : BOOLEAN;
     
     -----------------------------------------------------------------------------------
     
@@ -146,8 +146,8 @@ architecture Behavioral of write_time is
     signal h_time_mn_i       : INTEGER range 0 to 2;
     
     signal time_mn_bool      : BOOLEAN;
-    signal time_mn_pixel     : STD_LOGIC;
-    signal time_mn_val_pixel : STD_LOGIC;
+    signal time_mn_pixel     : BOOLEAN;
+    signal time_mn_val_pixel : BOOLEAN;
     
     -----------------------------------------------------------------------------------
     
@@ -167,8 +167,8 @@ architecture Behavioral of write_time is
     signal h_time_s_pos     : STD_LOGIC_VECTOR(11 downto 0);
     signal h_time_s_i       : INTEGER range 0 to 3;
     
-    signal time_s_pixel     : STD_LOGIC;
-    signal time_s_val_pixel : STD_LOGIC;
+    signal time_s_pixel     : BOOLEAN;
+    signal time_s_val_pixel : BOOLEAN;
     
 begin
     

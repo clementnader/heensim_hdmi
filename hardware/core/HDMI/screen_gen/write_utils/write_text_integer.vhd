@@ -40,7 +40,7 @@ entity write_text_integer is
         i_hcounter    : in STD_LOGIC_VECTOR(11 downto 0);  -- current pixel horizontal position
         i_vcounter    : in STD_LOGIC_VECTOR(11 downto 0);  -- current pixel vertical position
         
-        o_pixel : out STD_LOGIC
+        o_pixel : out BOOLEAN
     );
 end write_text_integer;
 
@@ -116,13 +116,13 @@ begin
     begin
         if rising_edge(i_clk) then
             
-            o_pixel <= '0';
+            o_pixel <= False;
             
             if (i_hcounter >= i_text_hpos and i_hcounter < i_text_hpos + (C_FONT_WIDTH * G_TEXT_LENGTH))
              and (i_vcounter >= i_text_vpos and i_vcounter < i_text_vpos + C_FONT_HEIGHT) then
                 
-                if current_char_row(C_FONT_WIDTH - col_pos_in_char) = '1' then
-                    o_pixel <= '1';
+                if current_char_row(C_FONT_WIDTH-1 - col_pos_in_char) = '1' then
+                    o_pixel <= True;
                 end if;
                 
             end if;

@@ -23,8 +23,9 @@ library IEEE;
     use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 library work;
-    use work.events_list_pkg.ALL;
     use work.character_definition_pkg.ALL;
+    use work.neurons_pkg.ALL;
+    use work.neurons_platform_spec_pkg.ALL;
 
 
 entity write_info is
@@ -33,9 +34,9 @@ entity write_info is
         i_hcounter : in STD_LOGIC_VECTOR(11 downto 0);
         i_vcounter : in STD_LOGIC_VECTOR(11 downto 0);
         
-        o_board_pixel : out STD_LOGIC;
-        o_text_pixel  : out STD_LOGIC;
-        o_val_pixel   : out STD_LOGIC
+        o_board_pixel : out BOOLEAN;
+        o_text_pixel  : out BOOLEAN;
+        o_val_pixel   : out BOOLEAN
     );
 end write_info;
 
@@ -55,7 +56,7 @@ architecture Behavioral of write_info is
             i_hcounter     : in STD_LOGIC_VECTOR(11 downto 0);
             i_vcounter     : in STD_LOGIC_VECTOR(11 downto 0);
             
-            o_pixel : out STD_LOGIC
+            o_pixel : out BOOLEAN
         );
     end component;
     
@@ -78,15 +79,15 @@ architecture Behavioral of write_info is
     constant C_NB_ROW_STR  : STRING := integer'image(C_MAX_ROW+1);
     constant C_NB_COL_STR  : STRING := integer'image(C_MAX_COLUMN+1);
     
-    signal nb_chip_pixel : STD_LOGIC;
-    signal nb_virt_pixel : STD_LOGIC;
-    signal nb_row_pixel  : STD_LOGIC;
-    signal nb_col_pixel  : STD_LOGIC;
+    signal nb_chip_pixel : BOOLEAN;
+    signal nb_virt_pixel : BOOLEAN;
+    signal nb_row_pixel  : BOOLEAN;
+    signal nb_col_pixel  : BOOLEAN;
     
-    signal nb_chip_val_pixel : STD_LOGIC;
-    signal nb_virt_val_pixel : STD_LOGIC;
-    signal nb_row_val_pixel  : STD_LOGIC;
-    signal nb_col_val_pixel  : STD_LOGIC;
+    signal nb_chip_val_pixel : BOOLEAN;
+    signal nb_virt_val_pixel : BOOLEAN;
+    signal nb_row_val_pixel  : BOOLEAN;
+    signal nb_col_val_pixel  : BOOLEAN;
     
 begin
     

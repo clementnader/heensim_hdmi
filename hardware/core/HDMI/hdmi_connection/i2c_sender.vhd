@@ -45,12 +45,13 @@ end i2c_sender;
 
 architecture Behavioral of i2c_sender is
     
+    -- Shift registers
     constant C_SR_LENGTH : INTEGER := 2 + 9*(G_DATA_LENGTH+1);
     
     signal busy_sr              : STD_LOGIC_VECTOR(C_SR_LENGTH-1 downto 0) := (others => '0');
     signal clk_first_quarter_sr : STD_LOGIC_VECTOR(C_SR_LENGTH-1 downto 0) := (others => '1');
     signal clk_last_quarter_sr  : STD_LOGIC_VECTOR(C_SR_LENGTH-1 downto 0) := (others => '1');
-    signal tristate_sr          : STD_LOGIC_VECTOR(C_SR_LENGTH-1 downto 0) := (others => '0');
+    signal ack_sr          : STD_LOGIC_VECTOR(C_SR_LENGTH-1 downto 0) := (others => '0');
     signal data_sr              : STD_LOGIC_VECTOR(C_SR_LENGTH-1 downto 0) := (others => '1');
     
     -----------------------------------------------------------------------------------
@@ -69,7 +70,7 @@ begin
     
     -----------------------------------------------------------------------------------
     
-    o_sda <= data_sr(data_sr'high) when tristate_sr(tristate_sr'high) = '0'
+    o_sda <= data_sr(data_sr'high) when ack_sr(ack_sr'high) = '0'
         else 'Z';
     
     o_scl <= clk_first_quarter_sr(clk_first_quarter_sr'high) when i_clk = '1' and i_clk_x2 = '1'
@@ -114,58 +115,57 @@ begin
     begin
         if rising_edge(i_clk) then
             
-            if i2c_state = READY then
+            case i2c_state is
                 
-                -- Default values
-                busy_sr              <= (others => '0');
-                clk_first_quarter_sr <= (others => '1');
-                clk_last_quarter_sr  <= (others => '1');
-                tristate_sr          <= (others => '0');
-                data_sr              <= (others => '1');
-                
-            end if;
-            
-            if i2c_state = SET_SHIFT_REG then
-                
-                -- Put the new data into the shift registers
-                busy_sr              <= (others => '1');
-                clk_first_quarter_sr <= (clk_first_quarter_sr'high => '1', others => '0');
-                clk_last_quarter_sr  <= (0 => '1', others => '0');
-                
-                tristate_sr(C_SR_LENGTH-1 downto C_SR_LENGTH-10)
-                --    Start    Address     R/W   Ack
-                    <= "0" & b"0000_000" & "0" & "1";
-                
-                data_sr(C_SR_LENGTH-1 downto C_SR_LENGTH-10)
-                --    Start    Address     R/W   Ack
-                    <= "0" &   i_addr    & "0" & "1";
-                
-                for i in 0 to G_DATA_LENGTH-1 loop
-                    tristate_sr(C_SR_LENGTH-11-9*i downto C_SR_LENGTH-10-9*(i+1))
-                    --                               Data                                 Ack
-                        <=                       b"0000_0000"                           & "1";
+                when READY =>
+                    -- Default values
+                    busy_sr              <= (others => '0');
+                    clk_first_quarter_sr <= (others => '1');
+                    clk_last_quarter_sr  <= (others => '1');
+                    ack_sr          <= (others => '0');
+                    data_sr              <= (others => '1');
                     
-                    data_sr(C_SR_LENGTH-11-9*i downto C_SR_LENGTH-10-9*(i+1))
-                    --                               Data                                 Ack
-                        <= i_data(8*(G_DATA_LENGTH-i)-1 downto 8*(G_DATA_LENGTH-(i+1))) & "1";
-                end loop;
-                
-                --                Stop
-                tristate_sr(0)  <= '0';
-                data_sr(0)      <= '0';
-                
-            end if;
-            
-            if i2c_state = SHIFT_REG then
-                
-                -- Shift registers
-                busy_sr              <= busy_sr(busy_sr'high-1 downto 0) & '0';
-                clk_first_quarter_sr <= clk_first_quarter_sr(clk_first_quarter_sr'high-1 downto 0) & '1';
-                clk_last_quarter_sr  <= clk_last_quarter_sr(clk_last_quarter_sr'high-1 downto 0) & '1';
-                tristate_sr          <= tristate_sr(tristate_sr'high-1 downto 0) & '0';
-                data_sr              <= data_sr(data_sr'high-1 downto 0) & '1';
-                
-            end if;
+                when SET_SHIFT_REG =>
+                    -- Put the new data into the shift registers
+                    busy_sr              <= (others => '1');
+                    clk_first_quarter_sr <= (clk_first_quarter_sr'high => '1', others => '0');
+                    clk_last_quarter_sr  <= (0 => '1', others => '0');
+                    
+                    -- start bit
+                    ack_sr(C_SR_LENGTH-1)  <= '0';
+                    data_sr(C_SR_LENGTH-1) <= '0';
+                    -- I2C address on 7 bits
+                    ack_sr(C_SR_LENGTH-2 downto C_SR_LENGTH-8)  <= b"0000_000";
+                    data_sr(C_SR_LENGTH-2 downto C_SR_LENGTH-8) <= i_addr;
+                    -- R/W bit
+                    ack_sr(C_SR_LENGTH-9)  <= '0';
+                    data_sr(C_SR_LENGTH-9) <= '0';  -- write
+                    -- ack bit
+                    ack_sr(C_SR_LENGTH-10)  <= '1';
+                    data_sr(C_SR_LENGTH-10) <= '1';
+                    for i in 0 to G_DATA_LENGTH-1 loop
+                        -- data on 8 bits
+                        ack_sr(C_SR_LENGTH-11-9*i downto C_SR_LENGTH-18-9*i)  <= b"0000_0000";
+                        data_sr(C_SR_LENGTH-11-9*i downto C_SR_LENGTH-18-9*i) <= i_data(8*(G_DATA_LENGTH-i)-1 downto 8*(G_DATA_LENGTH-i)-8);
+                        -- ack bit
+                        ack_sr(C_SR_LENGTH-19-9*i)  <= '1';
+                        data_sr(C_SR_LENGTH-19-9*i) <= '1';
+                    end loop;
+                    -- stop bit
+                    ack_sr(0)  <= '0';
+                    data_sr(0) <= '0';
+                    
+                when SHIFT_REG =>
+                    -- Shift registers
+                    busy_sr              <= busy_sr(busy_sr'high-1 downto 0) & '0';
+                    clk_first_quarter_sr <= clk_first_quarter_sr(clk_first_quarter_sr'high-1 downto 0) & '1';
+                    clk_last_quarter_sr  <= clk_last_quarter_sr(clk_last_quarter_sr'high-1 downto 0) & '1';
+                    ack_sr               <= ack_sr(ack_sr'high-1 downto 0) & '0';
+                    data_sr              <= data_sr(data_sr'high-1 downto 0) & '1';
+                    
+                when others =>
+                    
+            end case;
             
         end if;
     end process;

@@ -23,7 +23,7 @@ library IEEE;
     use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 library work;
-    use work.raster_plot_pkg.ALL;
+    use work.plot_pkg.ALL;
 
 
 entity plot_axes_ticks is
