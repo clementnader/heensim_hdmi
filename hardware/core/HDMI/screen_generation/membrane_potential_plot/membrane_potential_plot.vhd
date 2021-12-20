@@ -2,9 +2,9 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 10/15/2021 07:44:26 PM
+-- Create Date: 12/19/2021 03:46:52 PM
 -- Design Name: 
--- Module Name: raster_plot - Behavioral
+-- Module Name: membrane_potential_plot - Behavioral
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 
@@ -24,32 +24,31 @@ library IEEE;
 
 library work;
     use work.plot_pkg.ALL;
+    use work.hdmi_resolution_pkg.ALL;
     use work.neurons_pkg.ALL;
 
 
-entity raster_plot is
-    generic (
-        G_NB_NEURONS : INTEGER
-    );
+entity membrane_potential_plot is
     port (
         i_clk               : in STD_LOGIC;
         i_hcounter          : in STD_LOGIC_VECTOR(11 downto 0);
         i_vcounter          : in STD_LOGIC_VECTOR(11 downto 0);
-        i_mem_rd_data       : in STD_LOGIC_VECTOR(G_NB_NEURONS-1 downto 0);
+        i_mem_rd_data       : in STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
         i_current_timestamp : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
         i_pointer0          : in STD_LOGIC_VECTOR(9 downto 0);
         
-        o_mem_rd_en         : out STD_LOGIC;
-        o_mem_rd_addr       : out STD_LOGIC_VECTOR(9 downto 0);
-        o_dot_pixel         : out BOOLEAN;
-        o_contours_pixel    : out BOOLEAN;
-        o_axes_label_pixel  : out BOOLEAN;
-        o_ticks_label_pixel : out BOOLEAN
+        o_mem_rd_en           : out STD_LOGIC;
+        o_mem_rd_addr         : out STD_LOGIC_VECTOR(9 downto 0);
+        o_dot_pixel           : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
+        o_contours_pixel      : out BOOLEAN;
+        o_axes_label_pixel    : out BOOLEAN;
+        o_h_ticks_label_pixel : out BOOLEAN;
+        o_v_ticks_label_pixel : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1)
     );
-end raster_plot;
+end membrane_potential_plot;
 
 
-architecture Behavioral of raster_plot is
+architecture Behavioral of membrane_potential_plot is
     
     component plot_contours
         generic (
@@ -69,10 +68,9 @@ architecture Behavioral of raster_plot is
             o_contours_pixel : out BOOLEAN
         );
     end component;
-    
-    component write_axes_and_ticks_label
+            
+    component write_axes_and_ticks_label_analog
         generic (
-            G_NB_V_POINTS : INTEGER;
             G_V_UP_LIMIT  : STD_LOGIC_VECTOR(11 downto 0);
             G_V_LOW_LIMIT : STD_LOGIC_VECTOR(11 downto 0)
         );
@@ -81,39 +79,45 @@ architecture Behavioral of raster_plot is
             i_hcounter : in STD_LOGIC_VECTOR(11 downto 0);
             i_vcounter : in STD_LOGIC_VECTOR(11 downto 0);
             
-            o_axes_label_pixel  : out BOOLEAN;
-            o_ticks_label_pixel : out BOOLEAN
+            o_axes_label_pixel    : out BOOLEAN;
+            o_h_ticks_label_pixel : out BOOLEAN;
+            o_v_ticks_label_pixel : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1)
         );
     end component;
     
     -----------------------------------------------------------------------------------
     
-    constant C_V_UP_LIMIT  : STD_LOGIC_VECTOR(11 downto 0) := x"028";
-    constant C_V_LOW_LIMIT : STD_LOGIC_VECTOR(11 downto 0) := C_V_UP_LIMIT + G_NB_NEURONS;
+    constant C_V_NB_POINTS : INTEGER := (C_TARGET_MAX+1) + (C_NB_NEURONS_ANALOG-1)*C_PLOT_SHIFT_BETWEEN_NEURONS;  -- 651
+        
+    constant C_V_LOW_LIMIT    : STD_LOGIC_VECTOR(11 downto 0) := C_V_VISIBLE - x"028";
+    constant C_V_UP_LIMIT_ALL : STD_LOGIC_VECTOR(11 downto 0) := C_V_LOW_LIMIT - C_V_NB_POINTS;
+    constant C_V_UP_LIMIT_1   : STD_LOGIC_VECTOR(11 downto 0) := C_V_LOW_LIMIT - (C_TARGET_MAX+1);
     
-    constant C_RANGE_VCNT1 : INTEGER := 10;  -- vertical tick every 10 neurons
-    constant C_RANGE_VCNT2 : INTEGER := 5;   -- vertical tick every 50 neurons
-    constant C_RANGE_VCNT3 : INTEGER := 2;   -- vertical tick every 100 neurons
+    constant C_RANGE_VCNT1 : INTEGER := 50;  -- vertical tick every 50 neurons
+    constant C_RANGE_VCNT2 : INTEGER := 1;   -- vertical tick every 50 neurons
+    constant C_RANGE_VCNT3 : INTEGER := 1;   -- vertical tick every 50 neurons
     
     -----------------------------------------------------------------------------------
     
-    -- Signal that converts the vertical position to the correspondant neuron ID
-    signal shifted_vcounter : INTEGER range 0 to G_NB_NEURONS-1;
+    -- Signal that converts the vertical position to the correspondant analog plot value
+    type T_SHIFTED_VCOUNTER_ARRAY is ARRAY(0 to C_NB_NEURONS_ANALOG-1) of INTEGER range 0 to C_TARGET_MAX;
+    
+    signal shifted_vcounter : T_SHIFTED_VCOUNTER_ARRAY;
     
     -- Signal of the current memory address to read
     signal mem_rd_addr : STD_LOGIC_VECTOR(9 downto 0);
     
-    -- Signals to increase dots size from one pixel to a cross of 3-pixel diameter
-    signal mem_column_before  : STD_LOGIC_VECTOR(G_NB_NEURONS-1 downto 0);  -- the column of neurons IDs corresponding to the previous timestamp
-    signal mem_column_current : STD_LOGIC_VECTOR(G_NB_NEURONS-1 downto 0);  -- the column of neurons IDs corresponding to the current timestamp
+    -- Signals to have dots as a '+' of 3-pixel diameter
+    signal mem_column_before  : STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);  -- the column of analog values corresponding to the previous timestamp
+    signal mem_column_current : STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);  -- the column of analog values corresponding to the current timestamp
     -- the column that corresponds to the next timestamp is the input i_mem_rd_data
     
 begin
     
     plot_contours_inst : plot_contours
         generic map (
-            G_NB_V_POINTS => G_NB_NEURONS,
-            G_V_UP_LIMIT  => C_V_UP_LIMIT,
+            G_NB_V_POINTS => C_V_NB_POINTS,
+            G_V_UP_LIMIT  => C_V_UP_LIMIT_ALL,
             G_V_LOW_LIMIT => C_V_LOW_LIMIT,
             
             G_RANGE_VCNT1 => C_RANGE_VCNT1,
@@ -128,10 +132,9 @@ begin
             o_contours_pixel => o_contours_pixel
         );
     
-    write_axes_and_ticks_label_inst : write_axes_and_ticks_label
+    write_axes_and_ticks_label_analog_inst : write_axes_and_ticks_label_analog
         generic map (
-            G_NB_V_POINTS => G_NB_NEURONS,
-            G_V_UP_LIMIT  => C_V_UP_LIMIT,
+            G_V_UP_LIMIT  => C_V_UP_LIMIT_ALL,
             G_V_LOW_LIMIT => C_V_LOW_LIMIT
         )
         port map (
@@ -139,8 +142,9 @@ begin
             i_hcounter => i_hcounter,
             i_vcounter => i_vcounter,
             
-            o_axes_label_pixel  => o_axes_label_pixel,
-            o_ticks_label_pixel => o_ticks_label_pixel
+            o_axes_label_pixel    => o_axes_label_pixel,
+            o_h_ticks_label_pixel => o_h_ticks_label_pixel,
+            o_v_ticks_label_pixel => o_v_ticks_label_pixel
         );
     
     -----------------------------------------------------------------------------------
@@ -150,11 +154,13 @@ begin
         if rising_edge(i_clk) then
             
             if i_hcounter = 0 then
-                if i_vcounter = C_V_UP_LIMIT+1 then
-                    shifted_vcounter <= G_NB_NEURONS-1;
-                elsif i_vcounter <= C_V_LOW_LIMIT or i_vcounter > C_V_UP_LIMIT+1 then
-                    shifted_vcounter <= shifted_vcounter - 1;
-                end if;
+                for i in 0 to C_NB_NEURONS_ANALOG-1 loop
+                    if i_vcounter = C_V_UP_LIMIT_1+1-50*i then
+                        shifted_vcounter(i) <= C_V_NB_POINTS-1;
+                    elsif i_vcounter <= C_V_LOW_LIMIT-50*i and i_vcounter > C_V_UP_LIMIT_1+1-50*i then
+                        shifted_vcounter(i) <= shifted_vcounter(i) - 1;
+                    end if;
+                end loop;
             end if;
             
         end if;
@@ -167,7 +173,7 @@ begin
     begin
         if rising_edge(i_clk) then
             
-            if i_vcounter <= C_V_LOW_LIMIT and i_vcounter > C_V_UP_LIMIT then
+            if i_vcounter <= C_V_LOW_LIMIT and i_vcounter > C_V_UP_LIMIT_ALL then
                 -- we need three time periods before reading from the memory
                 if i_hcounter = C_H_LOW_LIMIT - 4 then
                     o_mem_rd_en <= '1';
@@ -188,7 +194,7 @@ begin
     begin
         if rising_edge(i_clk) then
             
-            if i_vcounter <= C_V_LOW_LIMIT and i_vcounter > C_V_UP_LIMIT then
+            if i_vcounter <= C_V_LOW_LIMIT and i_vcounter > C_V_UP_LIMIT_ALL then
                 if i_hcounter = C_H_LOW_LIMIT - 1 then
                     mem_column_before  <= (others => '0');
                     mem_column_current <= i_mem_rd_data;
@@ -207,37 +213,23 @@ begin
     begin
         if rising_edge(i_clk) then
             
-            o_dot_pixel <= False;
-            
             -- Inside the plot
-            if i_vcounter <= C_V_LOW_LIMIT and i_vcounter > C_V_UP_LIMIT
-             and i_hcounter >= C_H_LOW_LIMIT and i_hcounter < C_H_UP_LIMIT then
+            for i in 0 to C_NB_NEURONS_ANALOG-1 loop
                 
-                -- Plot dots for the corresponding spike (dots have '+' shape)
-                --     Middle, up and down points
-                if i_current_timestamp(31 downto 10) /= 0 or i_current_timestamp >= i_hcounter-C_H_LOW_LIMIT then
-                    if mem_column_current(shifted_vcounter) = '1'
-                     or (shifted_vcounter > 0              and mem_column_current(shifted_vcounter-1) = '1')
-                     or (shifted_vcounter < G_NB_NEURONS-1 and mem_column_current(shifted_vcounter+1) = '1') then
-                        o_dot_pixel <= True;
+                o_dot_pixel(i) <= False;
+                
+                if i_vcounter <= C_V_LOW_LIMIT-50*i and i_vcounter > C_V_UP_LIMIT_1+1-50*i
+                 and i_hcounter >= C_H_LOW_LIMIT and i_hcounter < C_H_UP_LIMIT then
+                    
+                    -- Plot the analog value
+                    if i_current_timestamp(31 downto 10) /= 0 or i_current_timestamp >= i_hcounter-C_H_LOW_LIMIT then
+                        if mem_column_current(C_ANALOG_PLOT_VALUE_SIZE*(i+1)-1 downto C_ANALOG_PLOT_VALUE_SIZE*i) = shifted_vcounter(i) then
+                            o_dot_pixel(i) <= True;
+                        end if;
                     end if;
+                    
                 end if;
-                
-                --     Left points
-                if i_current_timestamp(31 downto 10) /= 0 or i_current_timestamp >= i_hcounter-C_H_LOW_LIMIT+1 then
-                    if i_mem_rd_data(shifted_vcounter) = '1' then
-                        o_dot_pixel <= True;
-                    end if;
-                end if;
-                
-                --     Right points
-                if i_current_timestamp(31 downto 10) /= 0 or i_current_timestamp >= i_hcounter-C_H_LOW_LIMIT-1 then
-                    if mem_column_before(shifted_vcounter) = '1' then
-                        o_dot_pixel <= True;
-                    end if;
-                end if;
-                
-            end if;
+            end loop;
             
         end if;
     end process;

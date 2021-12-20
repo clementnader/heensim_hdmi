@@ -74,13 +74,22 @@ package neurons_pkg is
     
     -----------------------------------------------------------------------------------
     
-    constant C_ANALOG_VALUE_SIZE         : INTEGER := 16;
-    constant C_POTENTIAL_PLOT_VALUE_SIZE : INTEGER := 9;
+    constant C_ANALOG_VALUE_SIZE : INTEGER := 16;
+    
+    constant C_ANALOG_MIN_VALUE : INTEGER := -8000;
+    constant C_ANALOG_MAX_VALUE : INTEGER := -3000;
+    
+    constant C_TARGET_MIN : INTEGER := 0;
+    constant C_TARGET_MAX : INTEGER := 500;
+    
+    constant C_ANALOG_TRANSFORM_DIVIDER : INTEGER := (C_ANALOG_MAX_VALUE-C_ANALOG_MIN_VALUE)/(C_TARGET_MAX-C_TARGET_MIN);  -- 10
+    constant C_ANALOG_TRANSFORM_ADDER   : INTEGER := C_TARGET_MIN - C_ANALOG_MIN_VALUE/C_ANALOG_TRANSFORM_DIVIDER;  -- 800
+    
+    constant C_ANALOG_PLOT_VALUE_SIZE : INTEGER := integer(ceil(log2(real(C_TARGET_MAX))));  -- 9
     
     constant C_NB_NEURONS_ANALOG : INTEGER := 4;
-    constant C_CNT_NEURONS_SIZE  : INTEGER := integer(ceil(log2(real(C_NB_NEURONS_ANALOG))));
     
-    constant C_ANALOG_MEM_SIZE : INTEGER := C_POTENTIAL_PLOT_VALUE_SIZE+C_CNT_NEURONS_SIZE;
+    constant C_ANALOG_MEM_SIZE : INTEGER := C_ANALOG_PLOT_VALUE_SIZE*C_NB_NEURONS_ANALOG;
     
     -----------------------------------------------------------------------------------
     
@@ -150,29 +159,28 @@ package body neurons_pkg is
     
     -----------------------------------------------------------------------------------
     
+    -- Convert a signed on 16 bits from -8,000 to -3,000
+    --     to a value between 0 and 500 in a std_logic_vector on 9 bits
     function transform_analog_value (
             analog_value : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0)
         ) return STD_LOGIC_VECTOR is
+            constant C_ANALOG_DIV_PRECISION_BITS : INTEGER := 16;
+            constant C_ANALOG_DIV_MULTIPLIER     : INTEGER := 2**C_ANALOG_DIV_PRECISION_BITS/C_ANALOG_TRANSFORM_DIVIDER;
             
-            constant C_POTENTIAL_TRANSFORM_DIVIDER       : INTEGER := 10;
-            constant C_POTENTIAL_TRANSFORM_ADDER         : INTEGER := 800;
-            constant C_POTENTIAL_DIVISION_PRECISION_BITS : INTEGER := 16;
-            constant C_POTENTIAL_DIVISION_MULTIPLIER     : INTEGER := 2**C_POTENTIAL_DIVISION_PRECISION_BITS/C_POTENTIAL_TRANSFORM_DIVIDER;
-            
-            variable multiplied_value : SIGNED(C_ANALOG_VALUE_SIZE+C_POTENTIAL_DIVISION_PRECISION_BITS-1 downto 0);
+            variable multiplied_value : SIGNED(C_ANALOG_VALUE_SIZE+C_ANALOG_DIV_PRECISION_BITS-1 downto 0);
             variable divided_value    : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
             variable result_value     : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
             
-            variable potential_plot_value : STD_LOGIC_VECTOR(C_POTENTIAL_PLOT_VALUE_SIZE-1 downto 0);
+            variable target_value : STD_LOGIC_VECTOR(C_ANALOG_PLOT_VALUE_SIZE-1 downto 0);
             
         begin
-            multiplied_value := analog_value*C_POTENTIAL_DIVISION_MULTIPLIER;
-            divided_value    := multiplied_value(C_ANALOG_VALUE_SIZE+C_POTENTIAL_DIVISION_PRECISION_BITS-1 downto C_POTENTIAL_DIVISION_PRECISION_BITS);
-            result_value     := divided_value + C_POTENTIAL_TRANSFORM_ADDER;
+            multiplied_value := analog_value*C_ANALOG_DIV_MULTIPLIER;
+            divided_value    := multiplied_value(C_ANALOG_VALUE_SIZE+C_ANALOG_DIV_PRECISION_BITS-1 downto C_ANALOG_DIV_PRECISION_BITS);
+            result_value     := divided_value + C_ANALOG_TRANSFORM_ADDER;
             
-            potential_plot_value := std_logic_vector(result_value(C_POTENTIAL_PLOT_VALUE_SIZE-1 downto 0));
+            target_value := std_logic_vector(result_value(C_ANALOG_PLOT_VALUE_SIZE-1 downto 0));
             
-            return potential_plot_value;
+            return target_value;
             
     end function;
     

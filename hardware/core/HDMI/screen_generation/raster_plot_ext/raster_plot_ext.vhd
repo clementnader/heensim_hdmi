@@ -108,7 +108,7 @@ architecture Behavioral of raster_plot_ext is
     -- Signal of the current memory address to read
     signal mem_rd_addr : STD_LOGIC_VECTOR(9 downto 0);
     
-    -- Signals to increase dots size from one pixel to a cross of 3-pixel diameter
+    -- Signals to have dots as a '+' of 3-pixel diameter
     signal mem_column_before  : STD_LOGIC_VECTOR(G_NB_NEURONS-1 downto 0);  -- the column of neurons IDs corresponding to the previous timestamp
     signal mem_column_current : STD_LOGIC_VECTOR(G_NB_NEURONS-1 downto 0);  -- the column of neurons IDs corresponding to the current timestamp
     -- the column that corresponds to the next timestamp is the input i_mem_rd_data

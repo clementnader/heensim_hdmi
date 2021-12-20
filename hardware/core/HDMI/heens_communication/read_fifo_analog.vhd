@@ -43,7 +43,7 @@ entity read_fifo_analog is
         o_mem_wr_we     : out STD_LOGIC;
         o_mem_wr_addr   : out STD_LOGIC_VECTOR(9 downto 0);
         o_mem_wr_din    : out STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
-        o_transfer_done : out STD_LOGIC                                  
+        o_transfer_done : out STD_LOGIC
     );
 end read_fifo_analog;
 
@@ -77,10 +77,11 @@ architecture Behavioral of read_fifo_analog is
     
     -----------------------------------------------------------------------------------
     
-    signal analog_value         : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
-    signal potential_plot_value : STD_LOGIC_VECTOR(C_POTENTIAL_PLOT_VALUE_SIZE-1 downto 0);
+    signal analog_value      : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
+    signal analog_plot_value : STD_LOGIC_VECTOR(C_ANALOG_PLOT_VALUE_SIZE-1 downto 0);
+    signal analog_mem_prev   : STD_LOGIC_VECTOR(C_ANALOG_PLOT_VALUE_SIZE*(C_NB_NEURONS_ANALOG-1)-1 downto 0);
     
-    signal neuron_cnt : STD_LOGIC_VECTOR(C_CNT_NEURONS_SIZE-1 downto 0);
+    signal neuron_cnt : INTEGER range 0 to C_NB_NEURONS_ANALOG-1;
     
     signal buffer_en   : STD_LOGIC;
     signal buffer_we   : STD_LOGIC;
@@ -194,7 +195,7 @@ begin
     transfer_flag_proc : process(i_clk)
     begin
         if rising_edge(i_clk) then
-        
+            
             last_end_screen <= i_end_screen;
             
             if i_rst = '1' then
@@ -207,7 +208,7 @@ begin
                     transfer_from_buffer <= '1';
                 end if;
             end if;
-        
+            
         end if;
     end process;
     
@@ -221,7 +222,10 @@ begin
                 analog_value <= signed(i_fifo_dout);
             end if;
             if fifo_rd_state = ANALOG_VALUE_CALC then
-                potential_plot_value <= transform_analog_value(analog_value);
+                analog_plot_value <= transform_analog_value(analog_value);
+            end if;
+            if fifo_rd_state = MEM_WRITE and neuron_cnt < C_NB_NEURONS_ANALOG-1 then
+                analog_mem_prev(C_ANALOG_PLOT_VALUE_SIZE*(neuron_cnt+1)-1 downto C_ANALOG_PLOT_VALUE_SIZE*neuron_cnt) <= analog_plot_value;
             end if;
             
         end if;
@@ -232,7 +236,7 @@ begin
         if rising_edge(i_clk) then
             
             if (fifo_rd_state = IDLE and i_ph_dist = '1') then
-                neuron_cnt <= (others => '0');
+                neuron_cnt <= 0;
             end if;
             if fifo_rd_state = MEM_WRITE then
                 neuron_cnt <= neuron_cnt + 1;
@@ -244,9 +248,7 @@ begin
     -----------------------------------------------------------------------------------
     
     -- Write and read signals for the buffer
-    buffer_en <= '1' when (fifo_rd_state = FIFO_READ and i_fifo_valid = '1')
-                       or fifo_rd_state = ANALOG_VALUE_CALC
-                       or fifo_rd_state = MEM_WRITE
+    buffer_en <= '1' when (fifo_rd_state = MEM_WRITE and neuron_cnt = C_NB_NEURONS_ANALOG-1)
                        
                        or fifo_rd_state = WAIT_BEFORE_TRANSFER
                        or fifo_rd_state = TRANSFER_WRITE
@@ -255,7 +257,7 @@ begin
     buffer_we <= '1' when fifo_rd_state = MEM_WRITE
             else '0';
     
-    buffer_din  <= neuron_cnt & potential_plot_value when fifo_rd_state = MEM_WRITE
+    buffer_din  <= analog_plot_value & analog_mem_prev when fifo_rd_state = MEM_WRITE
               else (others => '0');
     
     -- Write signals for the memory (when we transfer the buffer into it)
@@ -269,7 +271,7 @@ begin
     memory_addresses_proc : process(i_clk)
     begin
         if rising_edge(i_clk) then
-        
+            
             case fifo_rd_state is
                 
                 when IDLE =>
@@ -298,7 +300,7 @@ begin
                 when others =>
                 
             end case;
-        
+            
         end if;
     end process;
     

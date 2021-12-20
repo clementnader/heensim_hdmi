@@ -24,7 +24,7 @@ library IEEE;
 
 package character_definition_pkg is
     
-    type T_DIGITS_ARRAY is ARRAY (natural range <>) of INTEGER range -1 to 9;
+    type T_DIGITS_ARRAY is ARRAY(natural range <>) of INTEGER range -1 to 9;
     
     -----------------------------------------------------------------------------------
     
@@ -45,7 +45,7 @@ package character_definition_pkg is
     
     constant C_ARRAY_SIZE : INTEGER := C_ASCII_CODE_RANGE * C_FONT_HEIGHT;
     
-    type T_CHAR_TABLE is ARRAY (0 to C_ARRAY_SIZE-1) of STD_LOGIC_VECTOR(0 to C_FONT_WIDTH-1);
+    type T_CHAR_TABLE is ARRAY(0 to C_ARRAY_SIZE-1) of STD_LOGIC_VECTOR(0 to C_FONT_WIDTH-1);
     
     -- ROM definition
     constant C_CHARACTERS_TABLE : T_CHAR_TABLE := (

@@ -132,16 +132,16 @@ architecture Behavioral of generate_screen is
             i_hcounter          : in STD_LOGIC_VECTOR(11 downto 0);
             i_vcounter          : in STD_LOGIC_VECTOR(11 downto 0);
             i_mem_rd_data       : in STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
-            i_extend_vaxis      : in STD_LOGIC;
             i_current_timestamp : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
             i_pointer0          : in STD_LOGIC_VECTOR(9 downto 0);
             
-            o_mem_rd_en         : out STD_LOGIC;
-            o_mem_rd_addr       : out STD_LOGIC_VECTOR(9 downto 0);
-            o_dot_pixel         : out BOOLEAN;
-            o_contours_pixel    : out BOOLEAN;
-            o_axes_label_pixel  : out BOOLEAN;
-            o_ticks_label_pixel : out BOOLEAN
+            o_mem_rd_en           : out STD_LOGIC;
+            o_mem_rd_addr         : out STD_LOGIC_VECTOR(9 downto 0);
+            o_dot_pixel           : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
+            o_contours_pixel      : out BOOLEAN;
+            o_axes_label_pixel    : out BOOLEAN;
+            o_h_ticks_label_pixel : out BOOLEAN;
+            o_v_ticks_label_pixel : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1)
         );
     end component;
     
@@ -182,10 +182,11 @@ architecture Behavioral of generate_screen is
     signal raster_ext_ticks_label_pixel : BOOLEAN;
     
     -- Analog values plot: membrane potential
-    signal analog_dot_pixel         : BOOLEAN;
-    signal analog_contours_pixel    : BOOLEAN;
-    signal analog_axes_label_pixel  : BOOLEAN;
-    signal analog_ticks_label_pixel : BOOLEAN;
+    signal analog_dot_pixel           : T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
+    signal analog_contours_pixel      : BOOLEAN;
+    signal analog_axes_label_pixel    : BOOLEAN;
+    signal analog_h_ticks_label_pixel : BOOLEAN;
+    signal analog_v_ticks_label_pixel : T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
     
 begin
     
@@ -240,7 +241,7 @@ begin
             o_ticks_label_pixel => raster_ticks_label_pixel
         );
     
-    small_range_ext_plot : if C_EXT_RANGE_ID <= C_RANGE_ID_SMALL_PLOT generate
+    small_range_ext : if C_EXT_RANGE_ID <= C_RANGE_ID_SMALL_PLOT generate
         
         raster_plot_ext_inst : raster_plot_ext
             generic map (
@@ -290,23 +291,23 @@ begin
     
     -----------------------------------------------------------------------------------
     
---    membrane_potential_plot_inst : membrane_potential_plot
---        port map (
---            i_clk               => i_clk,
---            i_hcounter          => i_hcounter,
---            i_vcounter          => i_vcounter,
---            i_mem_rd_data       => i_analog_mem_rd_data,
---            i_extend_vaxis      => plot_extend_vaxis,
---            i_current_timestamp => plot_current_timestamp,
---            i_pointer0          => pointer0,
+    membrane_potential_plot_inst : membrane_potential_plot
+        port map (
+            i_clk               => i_clk,
+            i_hcounter          => i_hcounter,
+            i_vcounter          => i_vcounter,
+            i_mem_rd_data       => i_analog_mem_rd_data,
+            i_current_timestamp => plot_current_timestamp,
+            i_pointer0          => pointer0,
             
---            o_mem_rd_en         => o_analog_mem_rd_en,
---            o_mem_rd_addr       => o_analog_mem_rd_addr,
---            o_dot_pixel         => analog_dot_pixel,
---            o_contours_pixel    => analog_contours_pixel,
---            o_axes_label_pixel  => analog_axes_label_pixel,
---            o_ticks_label_pixel => analog_ticks_label_pixel
---        );
+            o_mem_rd_en           => o_analog_mem_rd_en,
+            o_mem_rd_addr         => o_analog_mem_rd_addr,
+            o_dot_pixel           => analog_dot_pixel,
+            o_contours_pixel      => analog_contours_pixel,
+            o_axes_label_pixel    => analog_axes_label_pixel,
+            o_h_ticks_label_pixel => analog_h_ticks_label_pixel,
+            o_v_ticks_label_pixel => analog_v_ticks_label_pixel
+        );
     
     -----------------------------------------------------------------------------------
     
@@ -390,8 +391,9 @@ begin
                 o_color <= C_BLUE;
             end if;
             
-            -- Raster plot
             if plot_extend_vaxis = '0' then
+                
+                -- Raster plot
                 if raster_dot_pixel then
                     o_color <= C_BLUE;
                 end if;
@@ -404,7 +406,31 @@ begin
                 if raster_ticks_label_pixel then
                     o_color <= C_BLACK;
                 end if;
+                
+                -- Analog values plot
+                for i in 0 to C_NB_NEURONS_ANALOG-1 loop
+                    if analog_dot_pixel(i) then
+                        o_color <= C_ANALOG_PLOT_COLORS(i);
+                    end if;
+                end loop;
+                if analog_contours_pixel then
+                    o_color <= C_BLACK;
+                end if;
+                if analog_axes_label_pixel then
+                    o_color <= C_BLACK;
+                end if;
+                if analog_h_ticks_label_pixel then
+                    o_color <= C_BLACK;
+                end if;
+                for i in 0 to C_NB_NEURONS_ANALOG-1 loop
+                    if analog_v_ticks_label_pixel(i) then
+                        o_color <= C_ANALOG_PLOT_COLORS(i);
+                    end if;
+                end loop;
+                
             else
+                
+                -- Raster plot
                 if raster_ext_dot_pixel then
                     o_color <= C_BLUE;
                 end if;
@@ -417,6 +443,7 @@ begin
                 if raster_ext_ticks_label_pixel then
                     o_color <= C_BLACK;
                 end if;
+                
             end if;
             
         end if;

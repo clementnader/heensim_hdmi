@@ -97,7 +97,7 @@ architecture Behavioral of hdmi_display is
     -----------------------------------------------------------------------------------
     
     component get_current_timestamp
-        port ( 
+        port (
             i_clk     : in STD_LOGIC;
             i_rst     : in STD_LOGIC;
             i_ph_dist : in STD_LOGIC;
@@ -164,7 +164,7 @@ architecture Behavioral of hdmi_display is
             o_mem_wr_we     : out STD_LOGIC;
             o_mem_wr_addr   : out STD_LOGIC_VECTOR(9 downto 0);
             o_mem_wr_din    : out STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
-            o_transfer_done : out STD_LOGIC                                  
+            o_transfer_done : out STD_LOGIC
         );
     end component;
     
@@ -350,7 +350,7 @@ begin
     -----------------------------------------------------------------------------------
     
     get_current_timestamp_inst_heens_clk : get_current_timestamp
-        port map ( 
+        port map (
             i_clk     => i_heens_clk,
             i_rst     => i_rst,
             i_ph_dist => i_ph_dist,
@@ -359,7 +359,7 @@ begin
         );
     
     get_current_timestamp_inst_pixel_clk : get_current_timestamp
-        port map ( 
+        port map (
             i_clk     => i_pixel_clk,
             i_rst     => pixel_clk_rst,
             i_ph_dist => pixel_clk_ph_dist,
@@ -411,40 +411,40 @@ begin
 --  ------------------ Read the analog FIFO and store it in memory --------------------
 --  ===================================================================================
     
---    read_fifo_analog_inst : read_fifo_analog
---        port map (
---            i_clk               => i_heens_clk,
---            i_rst               => i_rst,
---            i_ph_dist           => i_ph_dist,
---            i_current_timestamp => heens_clk_current_timestamp,
---            i_fifo_empty        => i_analog_fifo_empty,
---            i_fifo_valid        => i_analog_fifo_valid,
---            i_fifo_dout         => i_analog_fifo_dout,
---            i_end_screen        => heens_clk_plot_end_screen,
+    read_fifo_analog_inst : read_fifo_analog
+        port map (
+            i_clk               => i_heens_clk,
+            i_rst               => i_rst,
+            i_ph_dist           => i_ph_dist,
+            i_current_timestamp => heens_clk_current_timestamp,
+            i_fifo_empty        => i_analog_fifo_empty,
+            i_fifo_valid        => i_analog_fifo_valid,
+            i_fifo_dout         => i_analog_fifo_dout,
+            i_end_screen        => heens_clk_plot_end_screen,
             
---            o_hdmi_rd_fifo  => o_analog_hdmi_rd_fifo,
---            o_mem_wr_en     => analog_mem_wr_en,
---            o_mem_wr_we     => analog_mem_wr_we,
---            o_mem_wr_addr   => analog_mem_wr_addr,
---            o_mem_wr_din    => analog_mem_wr_din
---        );
+            o_hdmi_rd_fifo  => o_analog_hdmi_rd_fifo,
+            o_mem_wr_en     => analog_mem_wr_en,
+            o_mem_wr_we     => analog_mem_wr_we,
+            o_mem_wr_addr   => analog_mem_wr_addr,
+            o_mem_wr_din    => analog_mem_wr_din
+        );
     
---    analog_memory_inst : blk_mem_gen_2
---        port map (
---            clka   => i_heens_clk,
---            ena    => analog_mem_wr_en,
---            wea(0) => analog_mem_wr_we,
---            addra  => analog_mem_wr_addr,
---            dina   => analog_mem_wr_din,
---            douta  => open,
+    analog_memory_inst : blk_mem_gen_2
+        port map (
+            clka   => i_heens_clk,
+            ena    => analog_mem_wr_en,
+            wea(0) => analog_mem_wr_we,
+            addra  => analog_mem_wr_addr,
+            dina   => analog_mem_wr_din,
+            douta  => open,
             
---            clkb   => i_pixel_clk,
---            enb    => analog_mem_rd_en,
---            web(0) => '0',
---            addrb  => analog_mem_rd_addr,
---            dinb   => (others => '0'),
---            doutb  => analog_mem_rd_data
---        );
+            clkb   => i_pixel_clk,
+            enb    => analog_mem_rd_en,
+            web(0) => '0',
+            addrb  => analog_mem_rd_addr,
+            dinb   => (others => '0'),
+            doutb  => analog_mem_rd_data
+        );
     
 --  ===================================================================================
 --  ------------------- Read the memory and create the Raster plot --------------------

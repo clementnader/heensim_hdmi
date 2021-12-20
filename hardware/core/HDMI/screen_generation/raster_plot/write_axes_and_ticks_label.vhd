@@ -82,35 +82,12 @@ architecture Behavioral of write_axes_and_ticks_label is
     
     -----------------------------------------------------------------------------------
     
-    type T_LABEL_POS     is ARRAY(NATURAL range <>) of STD_LOGIC_VECTOR(11 downto 0);
-    type T_STRING_ARRAY  is ARRAY(NATURAL range <>) of STRING;
-    type T_INTEGER_ARRAY is ARRAY(NATURAL range <>) of INTEGER;
-    type T_BOOLEAN_ARRAY is ARRAY(NATURAL range <>) of BOOLEAN;
-    
-    -----------------------------------------------------------------------------------
-    
     constant C_TICK_LABEL_MOD : INTEGER := (G_NB_V_POINTS-1) mod 50;
     constant C_NB_TICK_LABEL  : INTEGER := (G_NB_V_POINTS-1-C_TICK_LABEL_MOD) / 50 + 1;
     
     -----------------------------------------------------------------------------------
     
     -- Ticks label on horizontal axis
-    constant C_H_TICK_NAME : T_STRING_ARRAY := ("   0", " 100", " 200",
-        " 300", " 400", " 500", " 600", " 700", " 800", " 900", "1000");
-    
-    constant C_H_TICK_HPOS : T_LABEL_POS(0 to 10) := (
-         0 => C_H_LOW_LIMIT +    0 - C_FONT_WIDTH*3 - C_FONT_WIDTH/2*1,  --    0
-         1 => C_H_LOW_LIMIT +  100 - C_FONT_WIDTH*1 - C_FONT_WIDTH/2*3,  --  100
-         2 => C_H_LOW_LIMIT +  200 - C_FONT_WIDTH*1 - C_FONT_WIDTH/2*3,  --  200
-         3 => C_H_LOW_LIMIT +  300 - C_FONT_WIDTH*1 - C_FONT_WIDTH/2*3,  --  300
-         4 => C_H_LOW_LIMIT +  400 - C_FONT_WIDTH*1 - C_FONT_WIDTH/2*3,  --  400
-         5 => C_H_LOW_LIMIT +  500 - C_FONT_WIDTH*1 - C_FONT_WIDTH/2*3,  --  500
-         6 => C_H_LOW_LIMIT +  600 - C_FONT_WIDTH*1 - C_FONT_WIDTH/2*3,  --  600
-         7 => C_H_LOW_LIMIT +  700 - C_FONT_WIDTH*1 - C_FONT_WIDTH/2*3,  --  700
-         8 => C_H_LOW_LIMIT +  800 - C_FONT_WIDTH*1 - C_FONT_WIDTH/2*3,  --  800
-         9 => C_H_LOW_LIMIT +  900 - C_FONT_WIDTH*1 - C_FONT_WIDTH/2*3,  --  900
-        10 => C_H_LOW_LIMIT + 1000 - C_FONT_WIDTH*0 - C_FONT_WIDTH/2*4   -- 1000
-    );
     constant C_H_TICK_VPOS : STD_LOGIC_VECTOR(11 downto 0) := G_V_LOW_LIMIT + 13;
     
     signal h_ticks_pixel : T_BOOLEAN_ARRAY(0 to 10);
@@ -150,11 +127,6 @@ architecture Behavioral of write_axes_and_ticks_label is
     -----------------------------------------------------------------------------------
     
     -- Labels on horizontal axis
-    constant C_H_LABEL : STRING := "time (ms)";
-    
-    constant C_H_MIDDLE_PLOT : STD_LOGIC_VECTOR(11 downto 0)
-        := C_H_LOW_LIMIT + ('0'&(C_H_UP_LIMIT(11 downto 1)-C_H_LOW_LIMIT(11 downto 1)));
-    
     constant C_H_LABEL_HPOS : STD_LOGIC_VECTOR(11 downto 0) := C_H_MIDDLE_PLOT - C_FONT_WIDTH/2*(C_H_LABEL'length) - 6;
     constant C_H_LABEL_VPOS : STD_LOGIC_VECTOR(11 downto 0) := C_H_TICK_VPOS + C_FONT_HEIGHT + 8;
     
@@ -173,32 +145,32 @@ architecture Behavioral of write_axes_and_ticks_label is
     
 begin
     
-    o_axes_label_pixel <= True when h_ticks_pixel /= (h_ticks_pixel'range => False)
-                                 or v_ticks_pixel /= (v_ticks_pixel'range => False)
-                     else False;
+    o_axes_label_pixel <= h_label_pixel or v_label_pixel;
     
-    o_ticks_label_pixel <= h_label_pixel or v_label_pixel;
+    o_ticks_label_pixel <= True when h_ticks_pixel /= (h_ticks_pixel'range => False)
+                                  or v_ticks_pixel /= (v_ticks_pixel'range => False)
+                      else False;
     
     -----------------------------------------------------------------------------------
     
     write_text_gen_h_ticks :
-        for i in 0 to 10 generate
-            write_text_inst_h_tick : write_text
-                generic map (
-                   G_TEXT_LENGTH => C_H_TICK_NAME(0)'length
-                )
-                port map (
-                    i_clk          => i_clk,
-                    i_do_display   => True,
-                    i_display_text => C_H_TICK_NAME(i),
-                    i_text_hpos    => C_H_TICK_HPOS(i),
-                    i_text_vpos    => C_H_TICK_VPOS,
-                    i_hcounter     => i_hcounter,
-                    i_vcounter     => i_vcounter,
-                    
-                    o_pixel => h_ticks_pixel(i)
-                );
-        end generate;
+    for i in 0 to 10 generate
+        write_text_inst_h_tick : write_text
+            generic map (
+               G_TEXT_LENGTH => C_H_TICK_NAME(0)'length
+            )
+            port map (
+                i_clk          => i_clk,
+                i_do_display   => True,
+                i_display_text => C_H_TICK_NAME(i),
+                i_text_hpos    => C_H_TICK_HPOS(i),
+                i_text_vpos    => C_H_TICK_VPOS,
+                i_hcounter     => i_hcounter,
+                i_vcounter     => i_vcounter,
+                
+                o_pixel => h_ticks_pixel(i)
+            );
+    end generate;
     
     write_text_gen_v_ticks :
     for i in 0 to C_NB_TICK_LABEL-1 generate
