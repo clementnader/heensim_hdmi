@@ -31,38 +31,29 @@ library work;
 
 entity generate_screen is
     port (
-        i_clk           : in STD_LOGIC;
-        i_rst           : in STD_LOGIC;
-        i_ph_dist       : in STD_LOGIC;
-        i_hcounter      : in STD_LOGIC_VECTOR(11 downto 0);
-        i_vcounter      : in STD_LOGIC_VECTOR(11 downto 0);
-        i_mem_rd_data   : in STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
-        i_extend_vaxis  : in STD_LOGIC;
-        i_transfer_done : in STD_LOGIC;
+        i_clk                : in STD_LOGIC;
+        i_rst                : in STD_LOGIC;
+        i_current_timestamp  : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
+        i_hcounter           : in STD_LOGIC_VECTOR(11 downto 0);
+        i_vcounter           : in STD_LOGIC_VECTOR(11 downto 0);
+        i_spikes_mem_rd_data : in STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
+        i_analog_mem_rd_data : in STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
+        i_extend_vaxis       : in STD_LOGIC;
+        i_transfer_done      : in STD_LOGIC;
         
-        o_hcounter    : out STD_LOGIC_VECTOR(11 downto 0);
-        o_vcounter    : out STD_LOGIC_VECTOR(11 downto 0);
-        o_mem_rd_en   : out STD_LOGIC;
-        o_mem_rd_addr : out STD_LOGIC_VECTOR(9 downto 0);
-        o_color       : out STD_LOGIC_VECTOR(23 downto 0);
-        o_end_screen  : out STD_LOGIC
+        o_hcounter           : out STD_LOGIC_VECTOR(11 downto 0);
+        o_vcounter           : out STD_LOGIC_VECTOR(11 downto 0);
+        o_spikes_mem_rd_en   : out STD_LOGIC;
+        o_spikes_mem_rd_addr : out STD_LOGIC_VECTOR(9 downto 0);
+        o_analog_mem_rd_en   : out STD_LOGIC;
+        o_analog_mem_rd_addr : out STD_LOGIC_VECTOR(9 downto 0);
+        o_color              : out STD_LOGIC_VECTOR(23 downto 0);
+        o_end_screen         : out STD_LOGIC
     );
 end generate_screen;
 
 
 architecture Behavioral of generate_screen is
-    
-    component get_current_timestamp
-        port ( 
-            i_clk     : in STD_LOGIC;
-            i_rst     : in STD_LOGIC;
-            i_ph_dist : in STD_LOGIC;
-            
-            o_current_timestamp : out STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0)
-        );
-    end component;
-    
-    -----------------------------------------------------------------------------------
     
     component write_info
         port (
@@ -92,12 +83,35 @@ architecture Behavioral of generate_screen is
     -----------------------------------------------------------------------------------
     
     component raster_plot
+        generic (
+            G_NB_NEURONS : INTEGER
+        );
         port (
             i_clk               : in STD_LOGIC;
             i_hcounter          : in STD_LOGIC_VECTOR(11 downto 0);
             i_vcounter          : in STD_LOGIC_VECTOR(11 downto 0);
-            i_mem_rd_data       : in STD_LOGIC_VECTOR(C_RANGE_ID_SMALL_PLOT-1 downto 0);
-            i_extend_vaxis      : in STD_LOGIC;
+            i_mem_rd_data       : in STD_LOGIC_VECTOR(G_NB_NEURONS-1 downto 0);
+            i_current_timestamp : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
+            i_pointer0          : in STD_LOGIC_VECTOR(9 downto 0);
+            
+            o_mem_rd_en         : out STD_LOGIC;
+            o_mem_rd_addr       : out STD_LOGIC_VECTOR(9 downto 0);
+            o_dot_pixel         : out BOOLEAN;
+            o_contours_pixel    : out BOOLEAN;
+            o_axes_label_pixel  : out BOOLEAN;
+            o_ticks_label_pixel : out BOOLEAN
+        );
+    end component;
+    
+    component raster_plot_ext
+        generic (
+            G_NB_NEURONS : INTEGER
+        );
+        port (
+            i_clk               : in STD_LOGIC;
+            i_hcounter          : in STD_LOGIC_VECTOR(11 downto 0);
+            i_vcounter          : in STD_LOGIC_VECTOR(11 downto 0);
+            i_mem_rd_data       : in STD_LOGIC_VECTOR(G_NB_NEURONS-1 downto 0);
             i_current_timestamp : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
             i_pointer0          : in STD_LOGIC_VECTOR(9 downto 0);
             
@@ -112,7 +126,24 @@ architecture Behavioral of generate_screen is
     
     -----------------------------------------------------------------------------------
     
-    signal current_timestamp : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
+    component membrane_potential_plot
+        port (
+            i_clk               : in STD_LOGIC;
+            i_hcounter          : in STD_LOGIC_VECTOR(11 downto 0);
+            i_vcounter          : in STD_LOGIC_VECTOR(11 downto 0);
+            i_mem_rd_data       : in STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
+            i_extend_vaxis      : in STD_LOGIC;
+            i_current_timestamp : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
+            i_pointer0          : in STD_LOGIC_VECTOR(9 downto 0);
+            
+            o_mem_rd_en         : out STD_LOGIC;
+            o_mem_rd_addr       : out STD_LOGIC_VECTOR(9 downto 0);
+            o_dot_pixel         : out BOOLEAN;
+            o_contours_pixel    : out BOOLEAN;
+            o_axes_label_pixel  : out BOOLEAN;
+            o_ticks_label_pixel : out BOOLEAN
+        );
+    end component;
     
     -----------------------------------------------------------------------------------
     
@@ -136,23 +167,27 @@ architecture Behavioral of generate_screen is
     signal time_val_pixel   : BOOLEAN;
     
     -- Raster plot
+    signal raster_mem_rd_en         : STD_LOGIC;
+    signal raster_mem_rd_addr       : STD_LOGIC_VECTOR(9 downto 0);
     signal raster_dot_pixel         : BOOLEAN;
     signal raster_contours_pixel    : BOOLEAN;
     signal raster_axes_label_pixel  : BOOLEAN;
     signal raster_ticks_label_pixel : BOOLEAN;
     
+    signal raster_ext_mem_rd_en         : STD_LOGIC;
+    signal raster_ext_mem_rd_addr       : STD_LOGIC_VECTOR(9 downto 0);
+    signal raster_ext_dot_pixel         : BOOLEAN;
+    signal raster_ext_contours_pixel    : BOOLEAN;
+    signal raster_ext_axes_label_pixel  : BOOLEAN;
+    signal raster_ext_ticks_label_pixel : BOOLEAN;
+    
+    -- Analog values plot: membrane potential
+    signal analog_dot_pixel         : BOOLEAN;
+    signal analog_contours_pixel    : BOOLEAN;
+    signal analog_axes_label_pixel  : BOOLEAN;
+    signal analog_ticks_label_pixel : BOOLEAN;
+    
 begin
-    
-    get_current_timestamp_inst_pixel_clk : get_current_timestamp
-        port map ( 
-            i_clk     => i_clk,
-            i_rst     => i_rst,
-            i_ph_dist => i_ph_dist,
-            
-            o_current_timestamp => current_timestamp
-        );
-    
-    -----------------------------------------------------------------------------------
     
     write_info_inst : write_info
         port map (
@@ -170,7 +205,7 @@ begin
             i_clk               => i_clk,
             i_hcounter          => i_hcounter,
             i_vcounter          => i_vcounter,
-            i_current_timestamp => current_timestamp,
+            i_current_timestamp => i_current_timestamp,
             
             o_time_label_pixel => time_label_pixel,
             o_time_pixel       => time_pixel,
@@ -179,23 +214,99 @@ begin
     
     -----------------------------------------------------------------------------------
     
-    raster_plot_inst : raster_plot
+    o_spikes_mem_rd_en <= raster_mem_rd_en when plot_extend_vaxis = '0'
+                     else raster_ext_mem_rd_en;
+    
+    o_spikes_mem_rd_addr <= raster_mem_rd_addr when plot_extend_vaxis = '0'
+                       else raster_ext_mem_rd_addr;
+    
+    raster_plot_inst_small_plot : raster_plot
+        generic map (
+            G_NB_NEURONS => C_SMALL_RANGE_ID
+        )
         port map (
             i_clk               => i_clk,
             i_hcounter          => i_hcounter,
             i_vcounter          => i_vcounter,
-            i_mem_rd_data       => i_mem_rd_data(C_RANGE_ID_SMALL_PLOT-1 downto 0),
-            i_extend_vaxis      => plot_extend_vaxis,
+            i_mem_rd_data       => i_spikes_mem_rd_data(C_SMALL_RANGE_ID-1 downto 0),
             i_current_timestamp => plot_current_timestamp,
             i_pointer0          => pointer0,
             
-            o_mem_rd_en         => o_mem_rd_en,
-            o_mem_rd_addr       => o_mem_rd_addr,
+            o_mem_rd_en         => raster_mem_rd_en,
+            o_mem_rd_addr       => raster_mem_rd_addr,
             o_dot_pixel         => raster_dot_pixel,
             o_contours_pixel    => raster_contours_pixel,
             o_axes_label_pixel  => raster_axes_label_pixel,
             o_ticks_label_pixel => raster_ticks_label_pixel
         );
+    
+    small_range_ext_plot : if C_EXT_RANGE_ID <= C_RANGE_ID_SMALL_PLOT generate
+        
+        raster_plot_ext_inst : raster_plot_ext
+            generic map (
+                G_NB_NEURONS => C_EXT_RANGE_ID
+            )
+            port map (
+                i_clk               => i_clk,
+                i_hcounter          => i_hcounter,
+                i_vcounter          => i_vcounter,
+                i_mem_rd_data       => i_spikes_mem_rd_data(C_EXT_RANGE_ID-1 downto 0),
+                i_current_timestamp => plot_current_timestamp,
+                i_pointer0          => pointer0,
+                
+                o_mem_rd_en         => raster_ext_mem_rd_en,
+                o_mem_rd_addr       => raster_ext_mem_rd_addr,
+                o_dot_pixel         => raster_ext_dot_pixel,
+                o_contours_pixel    => raster_ext_contours_pixel,
+                o_axes_label_pixel  => raster_ext_axes_label_pixel,
+                o_ticks_label_pixel => raster_ext_ticks_label_pixel
+            );
+        
+    end generate;
+    
+    extended_range : if C_EXT_RANGE_ID > C_RANGE_ID_SMALL_PLOT generate
+        
+        raster_plot_inst_ext : raster_plot
+            generic map (
+                G_NB_NEURONS => C_EXT_RANGE_ID
+            )
+            port map (
+                i_clk               => i_clk,
+                i_hcounter          => i_hcounter,
+                i_vcounter          => i_vcounter,
+                i_mem_rd_data       => i_spikes_mem_rd_data(C_EXT_RANGE_ID-1 downto 0),
+                i_current_timestamp => plot_current_timestamp,
+                i_pointer0          => pointer0,
+                
+                o_mem_rd_en         => raster_ext_mem_rd_en,
+                o_mem_rd_addr       => raster_ext_mem_rd_addr,
+                o_dot_pixel         => raster_ext_dot_pixel,
+                o_contours_pixel    => raster_ext_contours_pixel,
+                o_axes_label_pixel  => raster_ext_axes_label_pixel,
+                o_ticks_label_pixel => raster_ext_ticks_label_pixel
+            );
+        
+    end generate;
+    
+    -----------------------------------------------------------------------------------
+    
+--    membrane_potential_plot_inst : membrane_potential_plot
+--        port map (
+--            i_clk               => i_clk,
+--            i_hcounter          => i_hcounter,
+--            i_vcounter          => i_vcounter,
+--            i_mem_rd_data       => i_analog_mem_rd_data,
+--            i_extend_vaxis      => plot_extend_vaxis,
+--            i_current_timestamp => plot_current_timestamp,
+--            i_pointer0          => pointer0,
+            
+--            o_mem_rd_en         => o_analog_mem_rd_en,
+--            o_mem_rd_addr       => o_analog_mem_rd_addr,
+--            o_dot_pixel         => analog_dot_pixel,
+--            o_contours_pixel    => analog_contours_pixel,
+--            o_axes_label_pixel  => analog_axes_label_pixel,
+--            o_ticks_label_pixel => analog_ticks_label_pixel
+--        );
     
     -----------------------------------------------------------------------------------
     
@@ -223,11 +334,11 @@ begin
                 o_end_screen           <= '0';
             else
                 if last_transfer_done = '0' and i_transfer_done = '1' then  -- rising edge
-                    plot_current_timestamp <= current_timestamp;
-                    if current_timestamp(31 downto 10) = 0 then  -- the memory has not been written fully
+                    plot_current_timestamp <= i_current_timestamp;
+                    if i_current_timestamp(31 downto 10) = 0 then  -- the memory has not been written fully
                         pointer0 <= (others => '0');
                     else
-                        pointer0 <= current_timestamp(pointer0'high downto 0) + 1;
+                        pointer0 <= i_current_timestamp(pointer0'high downto 0) + 1;
                     end if;
                 end if;
                 
@@ -280,17 +391,32 @@ begin
             end if;
             
             -- Raster plot
-            if raster_dot_pixel then
-                o_color <= C_BLUE;
-            end if;
-            if raster_contours_pixel then
-                o_color <= C_BLACK;
-            end if;
-            if raster_axes_label_pixel then
-                o_color <= C_BLACK;
-            end if;
-            if raster_ticks_label_pixel then
-                o_color <= C_BLACK;
+            if plot_extend_vaxis = '0' then
+                if raster_dot_pixel then
+                    o_color <= C_BLUE;
+                end if;
+                if raster_contours_pixel then
+                    o_color <= C_BLACK;
+                end if;
+                if raster_axes_label_pixel then
+                    o_color <= C_BLACK;
+                end if;
+                if raster_ticks_label_pixel then
+                    o_color <= C_BLACK;
+                end if;
+            else
+                if raster_ext_dot_pixel then
+                    o_color <= C_BLUE;
+                end if;
+                if raster_ext_contours_pixel then
+                    o_color <= C_BLACK;
+                end if;
+                if raster_ext_axes_label_pixel then
+                    o_color <= C_BLACK;
+                end if;
+                if raster_ext_ticks_label_pixel then
+                    o_color <= C_BLACK;
+                end if;
             end if;
             
         end if;

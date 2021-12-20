@@ -51,7 +51,7 @@ architecture Behavioral of i2c_sender is
     signal busy_sr              : STD_LOGIC_VECTOR(C_SR_LENGTH-1 downto 0) := (others => '0');
     signal clk_first_quarter_sr : STD_LOGIC_VECTOR(C_SR_LENGTH-1 downto 0) := (others => '1');
     signal clk_last_quarter_sr  : STD_LOGIC_VECTOR(C_SR_LENGTH-1 downto 0) := (others => '1');
-    signal ack_sr          : STD_LOGIC_VECTOR(C_SR_LENGTH-1 downto 0) := (others => '0');
+    signal ack_sr               : STD_LOGIC_VECTOR(C_SR_LENGTH-1 downto 0) := (others => '0');
     signal data_sr              : STD_LOGIC_VECTOR(C_SR_LENGTH-1 downto 0) := (others => '1');
     
     -----------------------------------------------------------------------------------
@@ -122,7 +122,7 @@ begin
                     busy_sr              <= (others => '0');
                     clk_first_quarter_sr <= (others => '1');
                     clk_last_quarter_sr  <= (others => '1');
-                    ack_sr          <= (others => '0');
+                    ack_sr               <= (others => '0');
                     data_sr              <= (others => '1');
                     
                 when SET_SHIFT_REG =>

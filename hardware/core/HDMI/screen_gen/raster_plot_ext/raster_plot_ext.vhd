@@ -2,9 +2,9 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 10/15/2021 07:44:26 PM
+-- Create Date: 12/19/2021 03:47:51 PM
 -- Design Name: 
--- Module Name: raster_plot - Behavioral
+-- Module Name: raster_plot_ext - Behavioral
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 
@@ -27,7 +27,7 @@ library work;
     use work.neurons_pkg.ALL;
 
 
-entity raster_plot is
+entity raster_plot_ext is
     generic (
         G_NB_NEURONS : INTEGER
     );
@@ -46,12 +46,12 @@ entity raster_plot is
         o_axes_label_pixel  : out BOOLEAN;
         o_ticks_label_pixel : out BOOLEAN
     );
-end raster_plot;
+end raster_plot_ext;
 
 
-architecture Behavioral of raster_plot is
+architecture Behavioral of raster_plot_ext is
     
-    component plot_contours
+    component plot_contours_ext
         generic (
             G_NB_V_POINTS : INTEGER;
             G_V_UP_LIMIT  : STD_LOGIC_VECTOR(11 downto 0);
@@ -62,15 +62,16 @@ architecture Behavioral of raster_plot is
             G_RANGE_VCNT3 : INTEGER
         );
         port (
-            i_clk      : in STD_LOGIC;
-            i_hcounter : in STD_LOGIC_VECTOR(11 downto 0);
-            i_vcounter : in STD_LOGIC_VECTOR(11 downto 0);
+            i_clk           : in STD_LOGIC;
+            i_hcounter      : in STD_LOGIC_VECTOR(11 downto 0);
+            i_vcounter_ext  : in STD_LOGIC_VECTOR(11 downto 0);
+            i_intermed_vcnt : in STD_LOGIC_VECTOR(1 downto 0);
             
             o_contours_pixel : out BOOLEAN
         );
     end component;
     
-    component write_axes_and_ticks_label
+    component write_axes_and_ticks_label_ext
         generic (
             G_NB_V_POINTS : INTEGER;
             G_V_UP_LIMIT  : STD_LOGIC_VECTOR(11 downto 0);
@@ -100,6 +101,10 @@ architecture Behavioral of raster_plot is
     -- Signal that converts the vertical position to the correspondant neuron ID
     signal shifted_vcounter : INTEGER range 0 to G_NB_NEURONS-1;
     
+    -- Signals to extend vertical axis by a factor of 4
+    signal intermed_vcnt : STD_LOGIC_VECTOR(1 downto 0);
+    signal vcounter_ext  : STD_LOGIC_VECTOR(11 downto 0);
+    
     -- Signal of the current memory address to read
     signal mem_rd_addr : STD_LOGIC_VECTOR(9 downto 0);
     
@@ -110,7 +115,7 @@ architecture Behavioral of raster_plot is
     
 begin
     
-    plot_contours_inst : plot_contours
+    plot_contours_ext_inst : plot_contours_ext
         generic map (
             G_NB_V_POINTS => G_NB_NEURONS,
             G_V_UP_LIMIT  => C_V_UP_LIMIT,
@@ -121,23 +126,24 @@ begin
             G_RANGE_VCNT3 => C_RANGE_VCNT3
         )
         port map (
-            i_clk      => i_clk,
-            i_hcounter => i_hcounter,
-            i_vcounter => i_vcounter,
+            i_clk           => i_clk,
+            i_hcounter      => i_hcounter,
+            i_vcounter_ext  => vcounter_ext,
+            i_intermed_vcnt => intermed_vcnt,
             
             o_contours_pixel => o_contours_pixel
         );
     
-    write_axes_and_ticks_label_inst : write_axes_and_ticks_label
+    write_axes_and_ticks_label_ext_inst : write_axes_and_ticks_label_ext
         generic map (
             G_NB_V_POINTS => G_NB_NEURONS,
             G_V_UP_LIMIT  => C_V_UP_LIMIT,
             G_V_LOW_LIMIT => C_V_LOW_LIMIT
         )
         port map (
-            i_clk      => i_clk,
-            i_hcounter => i_hcounter,
-            i_vcounter => i_vcounter,
+            i_clk          => i_clk,
+            i_hcounter     => i_hcounter,
+            i_vcounter     => i_vcounter,
             
             o_axes_label_pixel  => o_axes_label_pixel,
             o_ticks_label_pixel => o_ticks_label_pixel
@@ -150,10 +156,19 @@ begin
         if rising_edge(i_clk) then
             
             if i_hcounter = 0 then
-                if i_vcounter = C_V_UP_LIMIT+1 then
+                if i_vcounter = 0 then
+                    -- Initialization
+                    vcounter_ext     <= (others => '0');
                     shifted_vcounter <= G_NB_NEURONS-1;
-                elsif i_vcounter <= C_V_LOW_LIMIT or i_vcounter > C_V_UP_LIMIT+1 then
-                    shifted_vcounter <= shifted_vcounter - 1;
+                    intermed_vcnt    <= (others => '0');
+                elsif vcounter_ext > C_V_LOW_LIMIT or vcounter_ext <= C_V_UP_LIMIT then
+                    vcounter_ext <= vcounter_ext + 1;
+                else
+                    intermed_vcnt <= intermed_vcnt + 1;  -- counter of 4
+                    if intermed_vcnt = "11" then
+                        vcounter_ext     <= vcounter_ext + 1;
+                        shifted_vcounter <= shifted_vcounter - 1;
+                    end if;
                 end if;
             end if;
             
@@ -167,7 +182,7 @@ begin
     begin
         if rising_edge(i_clk) then
             
-            if i_vcounter <= C_V_LOW_LIMIT and i_vcounter > C_V_UP_LIMIT then
+            if vcounter_ext <= C_V_LOW_LIMIT and vcounter_ext > C_V_UP_LIMIT then
                 -- we need three time periods before reading from the memory
                 if i_hcounter = C_H_LOW_LIMIT - 4 then
                     o_mem_rd_en <= '1';
@@ -188,11 +203,12 @@ begin
     begin
         if rising_edge(i_clk) then
             
-            if i_vcounter <= C_V_LOW_LIMIT and i_vcounter > C_V_UP_LIMIT then
+            if vcounter_ext <= C_V_LOW_LIMIT and vcounter_ext > C_V_UP_LIMIT then
                 if i_hcounter = C_H_LOW_LIMIT - 1 then
                     mem_column_before  <= (others => '0');
                     mem_column_current <= i_mem_rd_data;
-                elsif i_hcounter >= C_H_LOW_LIMIT and i_hcounter < C_H_UP_LIMIT then
+                end if;
+                if i_hcounter >= C_H_LOW_LIMIT and i_hcounter < C_H_UP_LIMIT then
                     mem_column_before  <= mem_column_current;
                     mem_column_current <= i_mem_rd_data;
                 end if;
@@ -210,33 +226,28 @@ begin
             o_dot_pixel <= False;
             
             -- Inside the plot
-            if i_vcounter <= C_V_LOW_LIMIT and i_vcounter > C_V_UP_LIMIT
+            if vcounter_ext <= C_V_LOW_LIMIT and vcounter_ext > C_V_UP_LIMIT
              and i_hcounter >= C_H_LOW_LIMIT and i_hcounter < C_H_UP_LIMIT then
                 
-                -- Plot dots for the corresponding spike (dots have '+' shape)
+                -- Plot dots for the corresponding spike (+ shape)
                 --     Middle, up and down points
                 if i_current_timestamp(31 downto 10) /= 0 or i_current_timestamp >= i_hcounter-C_H_LOW_LIMIT then
-                    if mem_column_current(shifted_vcounter) = '1'
-                     or (shifted_vcounter > 0              and mem_column_current(shifted_vcounter-1) = '1')
-                     or (shifted_vcounter < G_NB_NEURONS-1 and mem_column_current(shifted_vcounter+1) = '1') then
+                    if intermed_vcnt /= "00" and mem_column_current(shifted_vcounter) = '1' then
                         o_dot_pixel <= True;
                     end if;
                 end if;
-                
                 --     Left points
                 if i_current_timestamp(31 downto 10) /= 0 or i_current_timestamp >= i_hcounter-C_H_LOW_LIMIT+1 then
-                    if i_mem_rd_data(shifted_vcounter) = '1' then
+                    if intermed_vcnt = "10" and i_mem_rd_data(shifted_vcounter) = '1' then
                         o_dot_pixel <= True;
                     end if;
                 end if;
-                
                 --     Right points
                 if i_current_timestamp(31 downto 10) /= 0 or i_current_timestamp >= i_hcounter-C_H_LOW_LIMIT-1 then
-                    if mem_column_before(shifted_vcounter) = '1' then
+                    if intermed_vcnt = "10" and mem_column_before(shifted_vcounter) = '1' then
                         o_dot_pixel <= True;
                     end if;
                 end if;
-                
             end if;
             
         end if;

@@ -23,7 +23,6 @@ library IEEE;
 
 package neurons_platform_spec_pkg is
     
-    -- ZC706
     constant C_PLATFORM_NAME : STRING := "Zynq ZC706";
     
 end package;

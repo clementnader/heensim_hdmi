@@ -2,9 +2,9 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 10/08/2021 10:50:17 AM
+-- Create Date: 12/19/2021 05:59:20 PM
 -- Design Name: 
--- Module Name: read_fifo_spikes - Behavioral
+-- Module Name: read_fifo_analog - Behavioral
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 
@@ -27,7 +27,7 @@ library work;
     use work.neurons_pkg.ALL;
 
 
-entity read_fifo_spikes is
+entity read_fifo_analog is
     port (
         i_clk               : in STD_LOGIC;
         i_rst               : in STD_LOGIC;
@@ -35,56 +35,38 @@ entity read_fifo_spikes is
         i_current_timestamp : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
         i_fifo_empty        : in STD_LOGIC;
         i_fifo_valid        : in STD_LOGIC;
-        i_fifo_dout         : in STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
+        i_fifo_dout         : in STD_LOGIC_VECTOR(C_ANALOG_VALUE_SIZE-1 downto 0);
         i_end_screen        : in STD_LOGIC;
         
         o_hdmi_rd_fifo  : out STD_LOGIC;
         o_mem_wr_en     : out STD_LOGIC;
         o_mem_wr_we     : out STD_LOGIC;
         o_mem_wr_addr   : out STD_LOGIC_VECTOR(9 downto 0);
-        o_mem_wr_din    : out STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
-        o_transfer_done : out STD_LOGIC
+        o_mem_wr_din    : out STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
+        o_transfer_done : out STD_LOGIC                                  
     );
-end read_fifo_spikes;
+end read_fifo_analog;
 
-
-architecture Behavioral of read_fifo_spikes is
+architecture Behavioral of read_fifo_analog is
     
-    component blk_mem_gen_1
+    component blk_mem_gen_3
         port (
             clka  : in STD_LOGIC;
             ena   : in STD_LOGIC;
             wea   : in STD_LOGIC_VECTOR(0 downto 0);
             addra : in STD_LOGIC_VECTOR(4 downto 0);
-            dina  : in STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
+            dina  : in STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
             
-            douta : out STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0)
+            douta : out STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0)
         );
     end component;
     
     -----------------------------------------------------------------------------------
     
-    constant C_BLANK_MEMORY : STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0) := (others => '0');
-    
-    -- Add a one in the memory at the position that corresponds to the neuron
-    function convert_neuron_id (
-        id_value   : INTEGER range 0 to C_MAX_ID;
-        old_memory : STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0)
-    ) return STD_LOGIC_VECTOR is
-            variable new_memory   : STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
-        begin
-            new_memory := old_memory;
-            new_memory(id_value) := '1';
-            return new_memory;
-    end function;
-    
-    -----------------------------------------------------------------------------------
-    
     type T_FIFO_RD_STATE is (
         IDLE,
-        MEM_ERASE,
         FIFO_READ,
-        ID_VALUE_CALC,
+        ANALOG_VALUE_CALC,
         MEM_WRITE,
         FIFO_EMPTY,
         WAIT_BEFORE_TRANSFER,
@@ -95,14 +77,16 @@ architecture Behavioral of read_fifo_spikes is
     
     -----------------------------------------------------------------------------------
     
-    signal neuron_id : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0);
-    signal id_value  : INTEGER range 0 to C_MAX_ID;
+    signal analog_value         : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
+    signal potential_plot_value : STD_LOGIC_VECTOR(C_POTENTIAL_PLOT_VALUE_SIZE-1 downto 0);
+    
+    signal neuron_cnt : STD_LOGIC_VECTOR(C_CNT_NEURONS_SIZE-1 downto 0);
     
     signal buffer_en   : STD_LOGIC;
     signal buffer_we   : STD_LOGIC;
     signal buffer_addr : STD_LOGIC_VECTOR(4 downto 0);
-    signal buffer_din  : STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
-    signal buffer_dout : STD_LOGIC_VECTOR(C_RANGE_ID-1 downto 0);
+    signal buffer_din  : STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
+    signal buffer_dout : STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
     
     -----------------------------------------------------------------------------------
     
@@ -123,7 +107,7 @@ architecture Behavioral of read_fifo_spikes is
     
 begin
     
-    spikes_buffer_inst : blk_mem_gen_1
+    analog_buffer_inst : blk_mem_gen_3
         port map (
             clka   => i_clk,
             ena    => buffer_en,
@@ -148,23 +132,20 @@ begin
                     -- Idle
                     when IDLE =>
                         if i_ph_dist = '1' then
-                            fifo_rd_state <= MEM_ERASE;
+                            if i_fifo_empty = '0' then
+                                fifo_rd_state <= FIFO_READ;
+                            else
+                                fifo_rd_state <= FIFO_EMPTY;
+                            end if;
                         end if;
                     
                     -- Distribution phase: read the FIFO and store the spikes in the buffer
-                    when MEM_ERASE =>
-                        if i_fifo_empty = '0' then
-                            fifo_rd_state <= FIFO_READ;
-                        else
-                            fifo_rd_state <= FIFO_EMPTY;
-                        end if;
-                    
                     when FIFO_READ =>
                         if i_fifo_valid = '1' then
-                            fifo_rd_state <= ID_VALUE_CALC;
+                            fifo_rd_state <= ANALOG_VALUE_CALC;
                         end if;
                     
-                    when ID_VALUE_CALC =>
+                    when ANALOG_VALUE_CALC =>
                         fifo_rd_state <= MEM_WRITE;
                     
                     when MEM_WRITE =>
@@ -208,15 +189,12 @@ begin
     o_hdmi_rd_fifo <= '1' when fifo_rd_state = FIFO_READ and i_fifo_valid = '0'
                  else '0';
     
-    o_transfer_done <= '1' when fifo_rd_state = TRANSFER_WRITE and buffer_addr = buffer_cnt + 1
-                  else '0' when fifo_rd_state = IDLE;
-    
     -----------------------------------------------------------------------------------
     
     transfer_flag_proc : process(i_clk)
     begin
         if rising_edge(i_clk) then
-            
+        
             last_end_screen <= i_end_screen;
             
             if i_rst = '1' then
@@ -229,7 +207,7 @@ begin
                     transfer_from_buffer <= '1';
                 end if;
             end if;
-            
+        
         end if;
     end process;
     
@@ -240,11 +218,24 @@ begin
         if rising_edge(i_clk) then
             
             if (fifo_rd_state = FIFO_READ and i_fifo_valid = '1') then
-                neuron_id <= i_fifo_dout;
+                analog_value <= signed(i_fifo_dout);
             end if;
-            if fifo_rd_state = ID_VALUE_CALC then
-                -- Compute the transform from the neuron ID on 18 bits to a number from 0 to C_RANGE_ID-1(=199 for the ZedBoard)
-                id_value <= get_id_value(neuron_id);
+            if fifo_rd_state = ANALOG_VALUE_CALC then
+                potential_plot_value <= transform_analog_value(analog_value);
+            end if;
+            
+        end if;
+    end process;
+    
+    count_neuron_proc : process(i_clk)
+    begin
+        if rising_edge(i_clk) then
+            
+            if (fifo_rd_state = IDLE and i_ph_dist = '1') then
+                neuron_cnt <= (others => '0');
+            end if;
+            if fifo_rd_state = MEM_WRITE then
+                neuron_cnt <= neuron_cnt + 1;
             end if;
             
         end if;
@@ -253,21 +244,18 @@ begin
     -----------------------------------------------------------------------------------
     
     -- Write and read signals for the buffer
-    buffer_en <= '1' when fifo_rd_state = MEM_ERASE
-                       or (fifo_rd_state = FIFO_READ and i_fifo_valid = '1')
-                       or fifo_rd_state = ID_VALUE_CALC
+    buffer_en <= '1' when (fifo_rd_state = FIFO_READ and i_fifo_valid = '1')
+                       or fifo_rd_state = ANALOG_VALUE_CALC
                        or fifo_rd_state = MEM_WRITE
                        
                        or fifo_rd_state = WAIT_BEFORE_TRANSFER
                        or fifo_rd_state = TRANSFER_WRITE
             else '0';
     
-    buffer_we <= '1' when fifo_rd_state = MEM_ERASE
-                       or fifo_rd_state = MEM_WRITE
+    buffer_we <= '1' when fifo_rd_state = MEM_WRITE
             else '0';
     
-    buffer_din  <= C_BLANK_MEMORY                           when fifo_rd_state = MEM_ERASE
-              else convert_neuron_id(id_value, buffer_dout) when fifo_rd_state = MEM_WRITE
+    buffer_din  <= neuron_cnt & potential_plot_value when fifo_rd_state = MEM_WRITE
               else (others => '0');
     
     -- Write signals for the memory (when we transfer the buffer into it)

@@ -19,32 +19,33 @@
 
 library IEEE;
     use IEEE.STD_LOGIC_1164.ALL;
+    use IEEE.MATH_REAL.ALL;
 
 
 package character_definition_pkg is
     
     type T_DIGITS_ARRAY is ARRAY (natural range <>) of INTEGER range -1 to 9;
     
-    ------------------------------------------
+    -----------------------------------------------------------------------------------
     
     constant C_ASCII_CODE_RANGE : INTEGER := 128;  -- 128 = 2^7 ASCII characters
     
-    constant C_FONT_WIDTH_POW : INTEGER := 3;
-    constant C_FONT_WIDTH     : INTEGER := 2**C_FONT_WIDTH_POW;  -- 8
+    constant C_FONT_WIDTH     : INTEGER := 8;
+    constant C_FONT_WIDTH_POW : INTEGER := integer(ceil(log2(real(C_FONT_WIDTH))));
     
-    constant C_FONT_HEIGHT_POW : INTEGER := 4;
-    constant C_FONT_HEIGHT     : INTEGER := 2**C_FONT_HEIGHT_POW;  -- 16
+    constant C_FONT_HEIGHT     : INTEGER := 16;
+    constant C_FONT_HEIGHT_POW : INTEGER := integer(ceil(log2(real(C_FONT_HEIGHT))));
     
-    ------------------------------------------
+    -----------------------------------------------------------------------------------
     
     constant C_SPACE_CHAR : STD_LOGIC_VECTOR(6 downto 0) := b"010_0000";  -- x"20" ASCII code for ' '
     constant C_ZERO_CHAR  : STD_LOGIC_VECTOR(6 downto 0) := b"011_0000";  -- x"30" ASCII code for '0'
     
-    ------------------------------------------
+    -----------------------------------------------------------------------------------
     
     constant C_ARRAY_SIZE : INTEGER := C_ASCII_CODE_RANGE * C_FONT_HEIGHT;
     
-    type T_CHAR_TABLE is ARRAY (0 to C_ARRAY_SIZE-1) of STD_LOGIC_VECTOR(C_FONT_WIDTH-1 downto 0);
+    type T_CHAR_TABLE is ARRAY (0 to C_ARRAY_SIZE-1) of STD_LOGIC_VECTOR(0 to C_FONT_WIDTH-1);
     
     -- ROM definition
     constant C_CHARACTERS_TABLE : T_CHAR_TABLE := (

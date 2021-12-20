@@ -86,6 +86,10 @@ architecture Behavioral of write_time is
     signal cnt_day : INTEGER range 0 to 63;
     
     signal last_timestamp : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);  -- signal to know when there is a change in the timestamp value
+--    signal last_cnt_ms    : INTEGER range 0 to 999;
+--    signal last_cnt_s     : INTEGER range 0 to 59;
+--    signal last_cnt_mn    : INTEGER range 0 to 59;
+--    signal last_cnt_hr    : INTEGER range 0 to 23;
     
     -----------------------------------------------------------------------------------
     
@@ -172,7 +176,7 @@ architecture Behavioral of write_time is
     
 begin
     
-    o_time_pixel     <= time_s_pixel     or time_mn_pixel     or time_hr_pixel     or time_day_pixel    ;
+    o_time_pixel     <= time_s_pixel     or time_mn_pixel     or time_hr_pixel     or time_day_pixel;
     o_time_val_pixel <= time_s_val_pixel or time_mn_val_pixel or time_hr_val_pixel or time_day_val_pixel;
     
     -----------------------------------------------------------------------------------
@@ -219,6 +223,101 @@ begin
             
         end if;
     end process;
+    
+--    ms_counters_proc : process(i_clk)
+--    begin
+--        if rising_edge(i_clk) then
+            
+--            last_timestamp <= i_current_timestamp;
+            
+--            if i_current_timestamp = 0 then
+--                cnt_ms <= 0;
+--            elsif last_timestamp /= i_current_timestamp then
+--                if cnt_ms < 999 then
+--                    cnt_ms <= cnt_ms + 1;
+--                else
+--                    cnt_ms <= 0;
+--                end if;
+--            end if;
+            
+--        end if;
+--    end process;
+    
+--    s_counter_proc : process(i_clk)
+--    begin
+--        if rising_edge(i_clk) then
+            
+--            last_cnt_ms <= cnt_ms;
+            
+--            if i_current_timestamp = 0 then
+--                cnt_s <= 0;
+--            elsif last_cnt_ms = 999 and cnt_ms = 0 then
+--                if cnt_s < 59 then
+--                    cnt_s <= cnt_s + 1;
+--                else
+--                    cnt_s <= 0;
+--                end if;
+--            end if;
+            
+--        end if;
+--    end process;
+    
+--    mn_counter_proc : process(i_clk)
+--    begin
+--        if rising_edge(i_clk) then
+            
+--            last_cnt_s <= cnt_s;
+            
+--            if i_current_timestamp = 0 then
+--                cnt_mn <= 0;
+--            elsif last_cnt_s = 59 and cnt_s = 0 then
+--                if cnt_mn < 59 then
+--                    cnt_mn <= cnt_mn + 1;
+--                else
+--                    cnt_mn <= 0;
+--                end if;
+--            end if;
+            
+--        end if;
+--    end process;
+    
+--    hr_counter_proc : process(i_clk)
+--    begin
+--        if rising_edge(i_clk) then
+            
+--            last_cnt_mn <= cnt_mn;
+            
+--            if i_current_timestamp = 0 then
+--                cnt_hr <= 0;
+--            elsif last_cnt_mn = 59 and cnt_mn = 0 then
+--                if cnt_hr < 23 then
+--                    cnt_hr <= cnt_hr + 1;
+--                else
+--                    cnt_hr <= 0;
+--                end if;
+--            end if;
+            
+--        end if;
+--    end process;
+    
+--    day_counter_proc : process(i_clk)
+--    begin
+--        if rising_edge(i_clk) then
+            
+--            last_cnt_hr <= cnt_hr;
+            
+--            if i_current_timestamp = 0 then
+--                cnt_day <= 0;
+--            elsif last_cnt_hr = 23 and cnt_hr = 0 then
+--                if cnt_day < 63 then
+--                    cnt_day <= cnt_day + 1;
+--                else
+--                    cnt_day <= 0;
+--                end if;
+--            end if;
+            
+--        end if;
+--    end process;
     
     -----------------------------------------------------------------------------------
     

@@ -22,6 +22,7 @@ library IEEE;
     use IEEE.STD_LOGIC_1164.ALL;
     use IEEE.STD_LOGIC_UNSIGNED.ALL;
     use IEEE.NUMERIC_STD.ALL;
+    use IEEE.MATH_REAL.ALL;
 
 library work;
     use work.SNN_pkg.ALL;
@@ -29,11 +30,10 @@ library work;
 
 package neurons_pkg is
     
---    constant C_RANGE_ID            : INTEGER := 968;
-    constant C_RANGE_ID            : INTEGER := 200;
+    constant C_RANGE_ID            : INTEGER := 968;
     constant C_RANGE_ID_SMALL_PLOT : INTEGER := 200;
     
-    ------------------------------------------
+    -----------------------------------------------------------------------------------
     
     constant C_MAX_CHIP_ID : INTEGER := 1;
     constant C_MAX_VIRT    : INTEGER := max_neuron_v;
@@ -45,7 +45,17 @@ package neurons_pkg is
         + (C_MAX_ROW+1)    * (C_MAX_VIRT
         + (C_MAX_VIRT+1)   * (C_MAX_CHIP_ID-1)));
     
-    ------------------------------------------
+    -----------------------------------------------------------------------------------
+    
+    function minimum (
+        val1 : INTEGER;
+        val2 : INTEGER
+    ) return INTEGER;
+    
+    constant C_SMALL_RANGE_ID : INTEGER := minimum(C_MAX_ID+1, C_RANGE_ID_SMALL_PLOT);
+    constant C_EXT_RANGE_ID   : INTEGER := minimum(C_MAX_ID+1, C_RANGE_ID);
+    
+    -----------------------------------------------------------------------------------
     
     constant C_LENGTH_CHIP_ID : INTEGER := 7;
     constant C_LENGTH_VIRT    : INTEGER := 3;
@@ -56,15 +66,48 @@ package neurons_pkg is
     
     constant C_LENGTH_TIMESTAMP : INTEGER := 32;
     
-    ------------------------------------------
+    -----------------------------------------------------------------------------------
     
     function get_id_value (
         neuron_id : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0)
     ) return INTEGER;
     
+    -----------------------------------------------------------------------------------
+    
+    constant C_ANALOG_VALUE_SIZE         : INTEGER := 16;
+    constant C_POTENTIAL_PLOT_VALUE_SIZE : INTEGER := 9;
+    
+    constant C_NB_NEURONS_ANALOG : INTEGER := 4;
+    constant C_CNT_NEURONS_SIZE  : INTEGER := integer(ceil(log2(real(C_NB_NEURONS_ANALOG))));
+    
+    constant C_ANALOG_MEM_SIZE : INTEGER := C_POTENTIAL_PLOT_VALUE_SIZE+C_CNT_NEURONS_SIZE;
+    
+    -----------------------------------------------------------------------------------
+    
+    function transform_analog_value (
+        analog_value : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0)
+    ) return STD_LOGIC_VECTOR;
+    
 end package;
 
+
 package body neurons_pkg is
+    
+    function minimum (
+        val1 : INTEGER;
+        val2 : INTEGER
+    ) return INTEGER is
+        
+        begin
+            if val1 < val2 then
+                return val1;
+            else
+                return val2;
+            end if;
+        
+    end function;
+    
+    -----------------------------------------------------------------------------------
     
     function get_id_value (
         neuron_id : STD_LOGIC_VECTOR(C_LENGTH_NEURON_ID-1 downto 0)
@@ -103,6 +146,34 @@ package body neurons_pkg is
             
             return id_value;
         
+    end function;
+    
+    -----------------------------------------------------------------------------------
+    
+    function transform_analog_value (
+            analog_value : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0)
+        ) return STD_LOGIC_VECTOR is
+            
+            constant C_POTENTIAL_TRANSFORM_DIVIDER       : INTEGER := 10;
+            constant C_POTENTIAL_TRANSFORM_ADDER         : INTEGER := 800;
+            constant C_POTENTIAL_DIVISION_PRECISION_BITS : INTEGER := 16;
+            constant C_POTENTIAL_DIVISION_MULTIPLIER     : INTEGER := 2**C_POTENTIAL_DIVISION_PRECISION_BITS/C_POTENTIAL_TRANSFORM_DIVIDER;
+            
+            variable multiplied_value : SIGNED(C_ANALOG_VALUE_SIZE+C_POTENTIAL_DIVISION_PRECISION_BITS-1 downto 0);
+            variable divided_value    : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
+            variable result_value     : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
+            
+            variable potential_plot_value : STD_LOGIC_VECTOR(C_POTENTIAL_PLOT_VALUE_SIZE-1 downto 0);
+            
+        begin
+            multiplied_value := analog_value*C_POTENTIAL_DIVISION_MULTIPLIER;
+            divided_value    := multiplied_value(C_ANALOG_VALUE_SIZE+C_POTENTIAL_DIVISION_PRECISION_BITS-1 downto C_POTENTIAL_DIVISION_PRECISION_BITS);
+            result_value     := divided_value + C_POTENTIAL_TRANSFORM_ADDER;
+            
+            potential_plot_value := std_logic_vector(result_value(C_POTENTIAL_PLOT_VALUE_SIZE-1 downto 0));
+            
+            return potential_plot_value;
+            
     end function;
     
 end package body;

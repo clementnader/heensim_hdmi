@@ -23,7 +23,6 @@ library IEEE;
 
 package neurons_platform_spec_pkg is
     
-    -- ZedBoard
     constant C_PLATFORM_NAME : STRING := "ZedBoard";
     
 end package;

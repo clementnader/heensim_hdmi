@@ -29,23 +29,27 @@ entity HEENSim is
         G_PERIOD    : INTEGER
     );
     port (
-        i_clk          : in STD_LOGIC;
-        i_rst          : in STD_LOGIC;
-        i_hdmi_rd_fifo : in STD_LOGIC;
+        i_clk                 : in STD_LOGIC;
+        i_rst                 : in STD_LOGIC;
+        i_spikes_hdmi_rd_fifo : in STD_LOGIC;
+        i_analog_hdmi_rd_fifo : in STD_LOGIC;
         
-        o_fifo_dout  : out STD_LOGIC_VECTOR(31 downto 0);
-        o_fifo_empty : out STD_LOGIC;
-        o_fifo_valid : out STD_LOGIC;
-        o_ph_init    : out STD_LOGIC;
-        o_ph_conf    : out STD_LOGIC;
-        o_ph_exec    : out STD_LOGIC;
-        o_ph_dist    : out STD_LOGIC
+        o_spikes_fifo_dout  : out STD_LOGIC_VECTOR(31 downto 0);
+        o_spikes_fifo_empty : out STD_LOGIC;
+        o_spikes_fifo_valid : out STD_LOGIC;
+        o_analog_fifo_dout  : out STD_LOGIC_VECTOR(15 downto 0);
+        o_analog_fifo_empty : out STD_LOGIC;
+        o_analog_fifo_valid : out STD_LOGIC;
+        o_ph_init           : out STD_LOGIC;
+        o_ph_conf           : out STD_LOGIC;
+        o_ph_exec           : out STD_LOGIC;
+        o_ph_dist           : out STD_LOGIC
     );
 end HEENSim;
 
 architecture Behavioral of HEENSim is
 
-    component blk_mem_gen_2
+    component blk_mem_gen_4
         port (
             clka  : in STD_LOGIC;
             ena   : in STD_LOGIC;
@@ -112,13 +116,13 @@ begin
     o_ph_dist <= '1' when phase_state = DIST_PHASE or phase_state = DIST_READ  else '0';
     
     -- FIFO signals
-    o_fifo_empty <= fifo_empty;
-    o_fifo_valid <= fifo_valid;
-    o_fifo_dout  <= (31 downto 18 => '1') & fifo_dout;
+    o_spikes_fifo_empty <= fifo_empty;
+    o_spikes_fifo_valid <= fifo_valid;
+    o_spikes_fifo_dout  <= (31 downto 18 => '1') & fifo_dout;
     
     -----------------------------------------------------------------------------------
     
-    blk_mem_gen_2_inst : blk_mem_gen_2 
+    blk_mem_gen_4_inst : blk_mem_gen_4 
         port map (
             clka   => i_clk,
             ena    => mem_en,
@@ -199,7 +203,7 @@ begin
                     
                     when DIST_PHASE =>
                         period_count <= period_count + 1;
-                        if fifo_empty = '0' and i_hdmi_rd_fifo = '1' then
+                        if fifo_empty = '0' and i_spikes_hdmi_rd_fifo = '1' then
                             fifo_rd_en  <= '1';
                             phase_state <= DIST_READ;
                         elsif fifo_empty = '1' and period_count = G_PERIOD then

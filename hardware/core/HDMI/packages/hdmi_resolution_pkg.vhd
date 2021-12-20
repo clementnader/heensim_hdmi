@@ -35,6 +35,8 @@ package hdmi_resolution_pkg is
     constant C_RES_NAME : T_HDMI_RES_NAME := HDMI_RES_1920x1080_60_P;  -- (150 MHz pixel clock needed)
 --    constant C_RES_NAME : T_HDMI_RES_NAME := HDMI_RES_1680x1050_60_P;  -- (150 MHz pixel clock needed)
     
+    -----------------------------------------------------------------------------------
+    
     type T_HDMI_RES_VIDEO_TIMING is
         record
             ResolutionName : T_HDMI_RES_NAME;
@@ -61,7 +63,7 @@ package hdmi_resolution_pkg is
         2 => (HDMI_RES_1680x1050_60_P, 1680,  104,  184,  288,  '0', 1050,    1,    3,   33,  '1')
     );
     
-    ------------------------------------------
+    -----------------------------------------------------------------------------------
     
     function hdmi_res_get_resolution(
         res_name : T_HDMI_RES_NAME
@@ -69,7 +71,7 @@ package hdmi_resolution_pkg is
     
     constant C_VIDEO_TIMING : T_HDMI_RES_VIDEO_TIMING := hdmi_res_get_resolution(C_RES_NAME);
     
-    ------------------------------------------
+    -----------------------------------------------------------------------------------
     
     constant C_ZERO : STD_LOGIC_VECTOR(11 downto 0) := (others => '0');
     
@@ -93,12 +95,16 @@ package body hdmi_resolution_pkg is
     function hdmi_res_get_resolution (
         res_name : T_HDMI_RES_NAME
     ) return T_HDMI_RES_VIDEO_TIMING is
+            
         begin
+            
             for i in C_HDMI_RES_VTIMING_RESOLUTIONS'range loop
                 next when (res_name /= C_HDMI_RES_VTIMING_RESOLUTIONS(i).ResolutionName);
                 return C_HDMI_RES_VTIMING_RESOLUTIONS(i);
             end loop;
+            
             return C_HDMI_RES_VTIMING_RESOLUTIONS(1);  -- default value HDMI_RES_1920x1080_60_P
+            
     end function;
     
 end package body;

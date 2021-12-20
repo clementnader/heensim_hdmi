@@ -36,15 +36,15 @@ package SNN_pkg is
     -----------------------------------------------------------------------------------------------------
     --------------------------------------- GLOBAL PARAMETERS -------------------------------------------
     -----------------------------------------------------------------------------------------------------
-    constant size_x        : integer := 11;         -- 4 columns -- 4 bits: 1 <= size_x <= 16
-    constant size_y        : integer := 11;         -- 4 rows    -- 4 bits: 1 <= size_y <= 16
+    constant size_x        : integer := 5;          -- 4 columns -- 4 bits: 1 <= size_x <= 16
+    constant size_y        : integer := 5;          -- 4 rows    -- 4 bits: 1 <= size_y <= 16
     constant size_x_1      : integer := size_x - 1; -- Number of Processing Element columns;
     constant size_y_1      : integer := size_y - 1; -- Number of Processing Element rows;
     constant max_neuron_v  : integer := 7;          -- Maximum number of virtual layers
     
-end SNN_pkg;
+end package;
 
 
 package body SNN_pkg is
     
-end;
+end package body;
