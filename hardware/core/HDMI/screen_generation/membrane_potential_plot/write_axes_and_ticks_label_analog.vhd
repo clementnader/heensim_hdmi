@@ -30,8 +30,9 @@ library work;
 
 entity write_axes_and_ticks_label_analog is
     generic (
-        G_V_UP_LIMIT  : STD_LOGIC_VECTOR(11 downto 0);
-        G_V_LOW_LIMIT : STD_LOGIC_VECTOR(11 downto 0)
+        G_V_UP_LIMIT_ALL  : STD_LOGIC_VECTOR(11 downto 0);
+        G_V_LOW_LIMIT_ALL : STD_LOGIC_VECTOR(11 downto 0);
+        G_V_LOW_LIMIT_1   : STD_LOGIC_VECTOR(11 downto 0)
     );
     port (
         i_clk      : in STD_LOGIC;
@@ -84,7 +85,7 @@ architecture Behavioral of write_axes_and_ticks_label_analog is
     -----------------------------------------------------------------------------------
     
     -- Ticks label on horizontal axis
-    constant C_H_TICK_VPOS : STD_LOGIC_VECTOR(11 downto 0) := G_V_UP_LIMIT - 12 - C_FONT_HEIGHT;
+    constant C_H_TICK_VPOS : STD_LOGIC_VECTOR(11 downto 0) := G_V_UP_LIMIT_ALL - 9 - C_FONT_HEIGHT;
     
     signal h_ticks_pixel : T_BOOLEAN_ARRAY(0 to 10);
     
@@ -94,39 +95,45 @@ architecture Behavioral of write_axes_and_ticks_label_analog is
     constant C_V_LOW_TICK_VALUE : STRING := "-80";
     constant C_V_MID_TICK_VALUE : STRING := "-55";
     constant C_V_UP_TICK_VALUE  : STRING := "-30";
-    constant C_V_LOW_TICK_LABEL : STRING := "depolarization";
     constant C_V_MID_TICK_LABEL : STRING := "threshold";
     
     constant C_V_LEFT_TICK_HPOS  : STD_LOGIC_VECTOR(11 downto 0) := C_H_LOW_LIMIT - 14 - 3*C_FONT_WIDTH;
     constant C_V_RIGHT_TICK_HPOS : STD_LOGIC_VECTOR(11 downto 0) := C_H_UP_LIMIT  + 14;
     
-    constant C_V_LOW_TICK_VPOS : STD_LOGIC_VECTOR(11 downto 0) := G_V_LOW_LIMIT -   0 - C_FONT_HEIGHT/2 + 1;
-    constant C_V_MID_TICK_VPOS : STD_LOGIC_VECTOR(11 downto 0) := G_V_LOW_LIMIT - 250 - C_FONT_HEIGHT/2 + 1;
-    constant C_V_UP_TICK_VPOS  : STD_LOGIC_VECTOR(11 downto 0) := G_V_LOW_LIMIT - 500 - C_FONT_HEIGHT/2 + 1;
+    constant C_V_LOW_TICK_VPOS : STD_LOGIC_VECTOR(11 downto 0) := G_V_LOW_LIMIT_1                  - C_FONT_HEIGHT/2 + 1;
+    constant C_V_MID_TICK_VPOS : STD_LOGIC_VECTOR(11 downto 0) := G_V_LOW_LIMIT_1 - C_TARGET_MAX/2 - C_FONT_HEIGHT/2 + 1;
+    constant C_V_UP_TICK_VPOS  : STD_LOGIC_VECTOR(11 downto 0) := G_V_LOW_LIMIT_1 - C_TARGET_MAX   - C_FONT_HEIGHT/2 + 1;
     
     signal v_low_left_ticks_pixel  : T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
     signal v_mid_left_ticks_pixel  : T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
     signal v_up_left_ticks_pixel   : T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
-    signal v_low_right_ticks_pixel : T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
     signal v_mid_right_ticks_pixel : T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
+    
+    constant C_DOTTED_LINE_VPOS : STD_LOGIC_VECTOR(11 downto 0) := G_V_LOW_LIMIT_1 - C_TARGET_MAX/2;
+    
+    signal dotted_line_pixel : T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
     
     -----------------------------------------------------------------------------------
     
-    -- Labels on vertical axis
+    -- Vertical axis label
     constant C_V_LABEL : STRING := "voltage (mV)";
     
     constant C_V_MIDDLE_PLOT : STD_LOGIC_VECTOR(11 downto 0)
-        := G_V_UP_LIMIT + ('0'&(G_V_LOW_LIMIT(11 downto 1)-G_V_UP_LIMIT(11 downto 1)));
+        := G_V_UP_LIMIT_ALL + ('0'&(G_V_LOW_LIMIT_ALL(11 downto 1)-G_V_UP_LIMIT_ALL(11 downto 1)));
     
     signal C_V_LABEL_HPOS : STD_LOGIC_VECTOR(11 downto 0) := C_V_LEFT_TICK_HPOS - 10 - C_FONT_HEIGHT;
     signal C_V_LABEL_VPOS : STD_LOGIC_VECTOR(11 downto 0) := C_V_MIDDLE_PLOT - C_FONT_WIDTH/2*(C_V_LABEL'length);
     
+    signal v_label_pixel : BOOLEAN;
+    
 begin
+    
+    o_axes_label_pixel <= v_label_pixel;
     
     o_h_ticks_label_pixel <= True when h_ticks_pixel /= (h_ticks_pixel'range => False) else False;
     
     o_v_ticks_label_pixel <= v_low_left_ticks_pixel or v_mid_left_ticks_pixel or v_up_left_ticks_pixel
-        or v_low_right_ticks_pixel or v_mid_right_ticks_pixel;
+        or v_mid_right_ticks_pixel or dotted_line_pixel;
     
     -----------------------------------------------------------------------------------
     
@@ -163,7 +170,7 @@ begin
                 i_do_display   => True,
                 i_display_text => C_V_LOW_TICK_VALUE,
                 i_text_hpos    => C_V_LEFT_TICK_HPOS,
-                i_text_vpos    => C_V_LOW_TICK_VPOS - 50*i,
+                i_text_vpos    => C_V_LOW_TICK_VPOS + (C_TARGET_MAX+1 + 2)*i,
                 i_hcounter     => i_hcounter,
                 i_vcounter     => i_vcounter,
                 
@@ -179,7 +186,7 @@ begin
                 i_do_display   => True,
                 i_display_text => C_V_MID_TICK_VALUE,
                 i_text_hpos    => C_V_LEFT_TICK_HPOS,
-                i_text_vpos    => C_V_MID_TICK_VPOS - 50*i,
+                i_text_vpos    => C_V_MID_TICK_VPOS + (C_TARGET_MAX+1 + 2)*i,
                 i_hcounter     => i_hcounter,
                 i_vcounter     => i_vcounter,
                 
@@ -195,27 +202,11 @@ begin
                 i_do_display   => True,
                 i_display_text => C_V_UP_TICK_VALUE,
                 i_text_hpos    => C_V_LEFT_TICK_HPOS,
-                i_text_vpos    => C_V_UP_TICK_VPOS - 50*i,
+                i_text_vpos    => C_V_UP_TICK_VPOS + (C_TARGET_MAX+1 + 2)*i,
                 i_hcounter     => i_hcounter,
                 i_vcounter     => i_vcounter,
                 
                 o_pixel => v_up_left_ticks_pixel(i)
-            );
-        
-        write_text_inst_v_low_right_ticks : write_text
-            generic map (
-               G_TEXT_LENGTH => C_V_LOW_TICK_LABEL'length
-            )
-            port map (
-                i_clk          => i_clk,
-                i_do_display   => True,
-                i_display_text => C_V_LOW_TICK_LABEL,
-                i_text_hpos    => C_V_RIGHT_TICK_HPOS,
-                i_text_vpos    => C_V_LOW_TICK_VPOS - 50*i,
-                i_hcounter     => i_hcounter,
-                i_vcounter     => i_vcounter,
-                
-                o_pixel => v_low_right_ticks_pixel(i)
             );
         
         write_text_inst_v_mid_right_ticks : write_text
@@ -227,7 +218,7 @@ begin
                 i_do_display   => True,
                 i_display_text => C_V_MID_TICK_LABEL,
                 i_text_hpos    => C_V_RIGHT_TICK_HPOS,
-                i_text_vpos    => C_V_MID_TICK_VPOS - 50*i,
+                i_text_vpos    => C_V_MID_TICK_VPOS - 1 + (C_TARGET_MAX+1 + 2)*i,
                 i_hcounter     => i_hcounter,
                 i_vcounter     => i_vcounter,
                 
@@ -235,6 +226,27 @@ begin
             );
         
     end generate;
+    
+    -----------------------------------------------------------------------------------
+    
+    draw_dotted_line_proc : process(i_clk)
+    begin
+        if rising_edge(i_clk) then
+            
+            dotted_line_pixel <= (others => False);
+            
+            if i_hcounter >= C_H_LOW_LIMIT and i_hcounter < C_H_UP_LIMIT then
+                for i in 0 to C_NB_NEURONS_ANALOG-1 loop
+                    
+                    if i_vcounter = C_DOTTED_LINE_VPOS + (C_TARGET_MAX+1 + 2)*i
+                     and i_hcounter(2) = '0' then
+                        dotted_line_pixel(i) <= True;
+                    end if;
+                    
+                end loop;
+            end if;
+        end if;
+    end process;
     
     -----------------------------------------------------------------------------------
     
@@ -251,7 +263,7 @@ begin
             i_hcounter     => i_hcounter,
             i_vcounter     => i_vcounter,
             
-            o_pixel => o_axes_label_pixel
+            o_pixel => v_label_pixel
         );
     
 end Behavioral;

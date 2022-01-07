@@ -51,7 +51,7 @@ end raster_plot_ext;
 
 architecture Behavioral of raster_plot_ext is
     
-    component plot_contours_ext
+    component plot_contours
         generic (
             G_NB_V_POINTS : INTEGER;
             G_V_UP_LIMIT  : STD_LOGIC_VECTOR(11 downto 0);
@@ -62,10 +62,11 @@ architecture Behavioral of raster_plot_ext is
             G_RANGE_VCNT3 : INTEGER
         );
         port (
-            i_clk           : in STD_LOGIC;
-            i_hcounter      : in STD_LOGIC_VECTOR(11 downto 0);
-            i_vcounter_ext  : in STD_LOGIC_VECTOR(11 downto 0);
-            i_intermed_vcnt : in STD_LOGIC_VECTOR(1 downto 0);
+            i_clk        : in STD_LOGIC;
+            i_hcounter   : in STD_LOGIC_VECTOR(11 downto 0);
+            i_vcounter   : in STD_LOGIC_VECTOR(11 downto 0);
+            i_plot_ext   : in BOOLEAN;
+            i_in_between : in BOOLEAN;
             
             o_contours_pixel : out BOOLEAN
         );
@@ -89,11 +90,11 @@ architecture Behavioral of raster_plot_ext is
     
     -----------------------------------------------------------------------------------
     
-    constant C_V_UP_LIMIT  : STD_LOGIC_VECTOR(11 downto 0) := x"028";
+    constant C_V_UP_LIMIT  : STD_LOGIC_VECTOR(11 downto 0) := C_OFFSET;
     constant C_V_LOW_LIMIT : STD_LOGIC_VECTOR(11 downto 0) := C_V_UP_LIMIT + G_NB_NEURONS;
     
-    constant C_RANGE_VCNT1 : INTEGER := 10;  -- vertical tick every 10 neurons
-    constant C_RANGE_VCNT2 : INTEGER := 5;   -- vertical tick every 50 neurons
+    constant C_RANGE_VCNT1 : INTEGER := 10;  -- vertical tick every  10 neurons
+    constant C_RANGE_VCNT2 : INTEGER := 5;   -- vertical tick every  50 neurons
     constant C_RANGE_VCNT3 : INTEGER := 2;   -- vertical tick every 100 neurons
     
     -----------------------------------------------------------------------------------
@@ -104,6 +105,7 @@ architecture Behavioral of raster_plot_ext is
     -- Signals to extend vertical axis by a factor of 4
     signal intermed_vcnt : STD_LOGIC_VECTOR(1 downto 0);
     signal vcounter_ext  : STD_LOGIC_VECTOR(11 downto 0);
+    signal plot_ext      : BOOLEAN;
     
     -- Signal of the current memory address to read
     signal mem_rd_addr : STD_LOGIC_VECTOR(9 downto 0);
@@ -115,7 +117,9 @@ architecture Behavioral of raster_plot_ext is
     
 begin
     
-    plot_contours_ext_inst : plot_contours_ext
+    plot_ext <= (intermed_vcnt = "10");
+    
+    plot_contours_inst : plot_contours
         generic map (
             G_NB_V_POINTS => G_NB_NEURONS,
             G_V_UP_LIMIT  => C_V_UP_LIMIT,
@@ -126,10 +130,11 @@ begin
             G_RANGE_VCNT3 => C_RANGE_VCNT3
         )
         port map (
-            i_clk           => i_clk,
-            i_hcounter      => i_hcounter,
-            i_vcounter_ext  => vcounter_ext,
-            i_intermed_vcnt => intermed_vcnt,
+            i_clk        => i_clk,
+            i_hcounter   => i_hcounter,
+            i_vcounter   => i_vcounter,
+            i_plot_ext   => plot_ext,
+            i_in_between => False,
             
             o_contours_pixel => o_contours_pixel
         );

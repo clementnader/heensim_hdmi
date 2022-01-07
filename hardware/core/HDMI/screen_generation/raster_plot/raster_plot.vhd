@@ -62,9 +62,11 @@ architecture Behavioral of raster_plot is
             G_RANGE_VCNT3 : INTEGER
         );
         port (
-            i_clk      : in STD_LOGIC;
-            i_hcounter : in STD_LOGIC_VECTOR(11 downto 0);
-            i_vcounter : in STD_LOGIC_VECTOR(11 downto 0);
+            i_clk        : in STD_LOGIC;
+            i_hcounter   : in STD_LOGIC_VECTOR(11 downto 0);
+            i_vcounter   : in STD_LOGIC_VECTOR(11 downto 0);
+            i_plot_ext   : in BOOLEAN;
+            i_in_between : in BOOLEAN;
             
             o_contours_pixel : out BOOLEAN
         );
@@ -88,11 +90,11 @@ architecture Behavioral of raster_plot is
     
     -----------------------------------------------------------------------------------
     
-    constant C_V_UP_LIMIT  : STD_LOGIC_VECTOR(11 downto 0) := x"028";
+    constant C_V_UP_LIMIT  : STD_LOGIC_VECTOR(11 downto 0) := C_OFFSET;
     constant C_V_LOW_LIMIT : STD_LOGIC_VECTOR(11 downto 0) := C_V_UP_LIMIT + G_NB_NEURONS;
     
-    constant C_RANGE_VCNT1 : INTEGER := 10;  -- vertical tick every 10 neurons
-    constant C_RANGE_VCNT2 : INTEGER := 5;   -- vertical tick every 50 neurons
+    constant C_RANGE_VCNT1 : INTEGER := 10;  -- vertical tick every  10 neurons
+    constant C_RANGE_VCNT2 : INTEGER := 5;   -- vertical tick every  50 neurons
     constant C_RANGE_VCNT3 : INTEGER := 2;   -- vertical tick every 100 neurons
     
     -----------------------------------------------------------------------------------
@@ -121,9 +123,11 @@ begin
             G_RANGE_VCNT3 => C_RANGE_VCNT3
         )
         port map (
-            i_clk      => i_clk,
-            i_hcounter => i_hcounter,
-            i_vcounter => i_vcounter,
+            i_clk        => i_clk,
+            i_hcounter   => i_hcounter,
+            i_vcounter   => i_vcounter,
+            i_plot_ext   => True,
+            i_in_between => False,
             
             o_contours_pixel => o_contours_pixel
         );

@@ -63,9 +63,52 @@ architecture Behavioral of read_fifo_analog is
     
     -----------------------------------------------------------------------------------
     
+    -- Convert a signed on 16 bits from -8,000 to -3,000
+    --     to a value between 0 and 180 in a std_logic_vector on 8 bits
+    
+    function divide_value (
+            analog_value : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0)
+        ) return STD_LOGIC_VECTOR is
+            
+            variable sum_value : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
+            
+        begin
+            
+            -- redress the value to a positive one
+            sum_value := analog_value + C_ANALOG_TRANSFORM_ADDER;  -- + 8000
+            
+            -- saturate between 0 and 5000
+            if sum_value < 0 then
+                sum_value := to_signed(0, C_ANALOG_VALUE_SIZE);
+            elsif sum_value > C_ANALOG_MAX_VALUE - C_ANALOG_MIN_VALUE then
+                sum_value := to_signed(C_ANALOG_MAX_VALUE - C_ANALOG_MIN_VALUE, C_ANALOG_VALUE_SIZE);
+            end if;
+            
+            return std_logic_vector(sum_value);
+            
+    end function;
+    
+    function transform_analog_value (
+            sum_value : STD_LOGIC_VECTOR(C_ANALOG_VALUE_SIZE-1 downto 0)
+        ) return STD_LOGIC_VECTOR is
+            
+            variable multiplied_value : STD_LOGIC_VECTOR(C_ANALOG_VALUE_SIZE+C_ANALOG_DIV_PRECISION_BITS-1 downto 0);
+            
+        begin
+            
+            multiplied_value := std_logic_vector(unsigned(sum_value) * C_ANALOG_DIV_MULTIPLIER);
+--            multiplied_value := (multiplied_value'range => '0') + sum_value&"00000000000" + sum_value&"00000000" + sum_value&"000000" - sum_value&"000";  -- + (sum_value<<11) + (sum_value<<8) + (sum_value<<6) - (sum_value<<3)
+            
+            return multiplied_value(C_ANALOG_DIV_PRECISION_BITS+C_ANALOG_PLOT_VALUE_SIZE-1 downto C_ANALOG_DIV_PRECISION_BITS);
+            
+    end function;
+    
+    -----------------------------------------------------------------------------------
+    
     type T_FIFO_RD_STATE is (
         IDLE,
         FIFO_READ,
+        ANALOG_VALUE_DIV,
         ANALOG_VALUE_CALC,
         MEM_WRITE,
         FIFO_EMPTY,
@@ -78,6 +121,7 @@ architecture Behavioral of read_fifo_analog is
     -----------------------------------------------------------------------------------
     
     signal analog_value      : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
+    signal sum_value         : STD_LOGIC_VECTOR(C_ANALOG_VALUE_SIZE-1 downto 0);
     signal analog_plot_value : STD_LOGIC_VECTOR(C_ANALOG_PLOT_VALUE_SIZE-1 downto 0);
     signal analog_mem_prev   : STD_LOGIC_VECTOR(C_ANALOG_PLOT_VALUE_SIZE*(C_NB_NEURONS_ANALOG-1)-1 downto 0);
     
@@ -143,8 +187,11 @@ begin
                     -- Distribution phase: read the FIFO and store the spikes in the buffer
                     when FIFO_READ =>
                         if i_fifo_valid = '1' then
-                            fifo_rd_state <= ANALOG_VALUE_CALC;
+                            fifo_rd_state <= ANALOG_VALUE_DIV;
                         end if;
+                    
+                    when ANALOG_VALUE_DIV =>
+                        fifo_rd_state <= ANALOG_VALUE_CALC;
                     
                     when ANALOG_VALUE_CALC =>
                         fifo_rd_state <= MEM_WRITE;
@@ -220,11 +267,14 @@ begin
             
             if (fifo_rd_state = FIFO_READ and i_fifo_valid = '1') then
                 analog_value <= signed(i_fifo_dout);
-            end if;
-            if fifo_rd_state = ANALOG_VALUE_CALC then
-                analog_plot_value <= transform_analog_value(analog_value);
-            end if;
-            if fifo_rd_state = MEM_WRITE and neuron_cnt < C_NB_NEURONS_ANALOG-1 then
+            
+            elsif fifo_rd_state = ANALOG_VALUE_DIV then
+                sum_value <= divide_value(analog_value);
+                
+            elsif fifo_rd_state = ANALOG_VALUE_CALC then
+                analog_plot_value <= transform_analog_value(sum_value);
+            
+            elsif fifo_rd_state = MEM_WRITE and neuron_cnt < C_NB_NEURONS_ANALOG-1 then
                 analog_mem_prev(C_ANALOG_PLOT_VALUE_SIZE*(neuron_cnt+1)-1 downto C_ANALOG_PLOT_VALUE_SIZE*neuron_cnt) <= analog_plot_value;
             end if;
             
@@ -254,10 +304,10 @@ begin
                        or fifo_rd_state = TRANSFER_WRITE
             else '0';
     
-    buffer_we <= '1' when fifo_rd_state = MEM_WRITE
+    buffer_we <= '1' when fifo_rd_state = MEM_WRITE and neuron_cnt = C_NB_NEURONS_ANALOG-1
             else '0';
     
-    buffer_din  <= analog_plot_value & analog_mem_prev when fifo_rd_state = MEM_WRITE
+    buffer_din  <= analog_plot_value & analog_mem_prev when fifo_rd_state = MEM_WRITE and neuron_cnt = C_NB_NEURONS_ANALOG-1
               else (others => '0');
     
     -- Write signals for the memory (when we transfer the buffer into it)

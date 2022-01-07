@@ -37,9 +37,11 @@ entity plot_contours is
         G_RANGE_VCNT3 : INTEGER
     );
     port (
-        i_clk      : in STD_LOGIC;
-        i_hcounter : in STD_LOGIC_VECTOR(11 downto 0);
-        i_vcounter : in STD_LOGIC_VECTOR(11 downto 0);
+        i_clk        : in STD_LOGIC;
+        i_hcounter   : in STD_LOGIC_VECTOR(11 downto 0);
+        i_vcounter   : in STD_LOGIC_VECTOR(11 downto 0);
+        i_plot_ext   : in BOOLEAN;
+        i_in_between : in BOOLEAN;
         
         o_contours_pixel : out BOOLEAN
     );
@@ -126,7 +128,8 @@ begin
             end if;
             if i_hcounter >= C_H_LOW_LIMIT-2 and i_hcounter < C_H_UP_LIMIT+2 then
                 if (i_vcounter > G_V_LOW_LIMIT and i_vcounter <= G_V_LOW_LIMIT+2)
-                 or (i_vcounter <= G_V_UP_LIMIT and i_vcounter > G_V_UP_LIMIT-2) then
+                 or (i_vcounter <= G_V_UP_LIMIT and i_vcounter > G_V_UP_LIMIT-2)
+                 or i_in_between then
                     o_contours_pixel <= True;
                 end if;
             end if;
@@ -154,22 +157,24 @@ begin
             end if;
             -- Ticks on vaxis
             if i_vcounter <= G_V_LOW_LIMIT and i_vcounter > G_V_UP_LIMIT then
-                if (i_hcounter >= C_H_LOW_LIMIT-11 and i_hcounter < C_H_LOW_LIMIT-8)
-                 or (i_hcounter < C_H_UP_LIMIT+11 and i_hcounter >= C_H_UP_LIMIT+8) then
-                    if vcnt1 = 0 and vcnt2 = 0 and vcnt3 = 0 then
-                        o_contours_pixel <= True;
+                if i_plot_ext then
+                    if (i_hcounter >= C_H_LOW_LIMIT-11 and i_hcounter < C_H_LOW_LIMIT-8)
+                     or (i_hcounter < C_H_UP_LIMIT+11 and i_hcounter >= C_H_UP_LIMIT+8) then
+                        if vcnt1 = 0 and vcnt2 = 0 and vcnt3 = 0 then
+                            o_contours_pixel <= True;
+                        end if;
                     end if;
-                end if;
-                if (i_hcounter >= C_H_LOW_LIMIT-8 and i_hcounter < C_H_LOW_LIMIT-5)
-                 or (i_hcounter < C_H_UP_LIMIT+8 and i_hcounter >= C_H_UP_LIMIT+5) then
-                    if vcnt1 = 0 and vcnt2 = 0 then
-                        o_contours_pixel <= True;
+                    if (i_hcounter >= C_H_LOW_LIMIT-8 and i_hcounter < C_H_LOW_LIMIT-5)
+                     or (i_hcounter < C_H_UP_LIMIT+8 and i_hcounter >= C_H_UP_LIMIT+5) then
+                        if vcnt1 = 0 and vcnt2 = 0 then
+                            o_contours_pixel <= True;
+                        end if;
                     end if;
-                end if;
-                if (i_hcounter >= C_H_LOW_LIMIT-5 and i_hcounter < C_H_LOW_LIMIT-2)
-                 or (i_hcounter < C_H_UP_LIMIT+5 and i_hcounter >= C_H_UP_LIMIT+2) then
-                    if vcnt1 = 0 then
-                        o_contours_pixel <= True;
+                    if (i_hcounter >= C_H_LOW_LIMIT-5 and i_hcounter < C_H_LOW_LIMIT-2)
+                     or (i_hcounter < C_H_UP_LIMIT+5 and i_hcounter >= C_H_UP_LIMIT+2) then
+                        if vcnt1 = 0 then
+                            o_contours_pixel <= True;
+                        end if;
                     end if;
                 end if;
             end if;

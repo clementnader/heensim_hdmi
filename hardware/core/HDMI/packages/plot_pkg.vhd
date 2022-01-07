@@ -51,27 +51,14 @@ package plot_pkg is
     constant C_H_LOW_LIMIT : STD_LOGIC_VECTOR(11 downto 0) := ('0'&C_H_VISIBLE(11 downto 1)) - C_NB_H_POINTS/2; -- (C_H_VISIBLE-C_NB_H_POINTS)/2
     constant C_H_UP_LIMIT  : STD_LOGIC_VECTOR(11 downto 0) := C_H_LOW_LIMIT + C_NB_H_POINTS;
     
+    constant C_OFFSET : STD_LOGIC_VECTOR(11 downto 0) := x"025";
+    
     -----------------------------------------------------------------------------------
     
     -- Draw ticks on the horizontal axis
     constant C_RANGE_HCNT1 : INTEGER := 25;  -- horizontal tick every 25 timestamps
     constant C_RANGE_HCNT2 : INTEGER := 4;   -- horizontal tick every 100 timestamps
     constant C_RANGE_HCNT3 : INTEGER := 5;   -- horizontal tick every 500 timestamps
-    
-    -----------------------------------------------------------------------------------
-    
-    -- ANALOG PLOT
-    
-    constant C_PLOT_SHIFT_BETWEEN_NEURONS : INTEGER := 50;
-    
-    type T_COLORS_ARRAY is ARRAY(NATURAL range <>) of STD_LOGIC_VECTOR(23 downto 0);
-    
-    constant C_ANALOG_PLOT_COLORS : T_COLORS_ARRAY := (
-        0 => C_BLUE,
-        1 => C_RED,
-        2 => C_GREEN,
-        3 => C_ORANGE
-    );
     
     -----------------------------------------------------------------------------------
     
@@ -101,11 +88,23 @@ package plot_pkg is
         10 => C_H_LOW_LIMIT + 1000 - C_FONT_WIDTH*0 - C_FONT_WIDTH/2*4   -- 1000
     );
     
-    -- Labels on horizontal axis
+    -- Horizontal axis label
     constant C_H_LABEL : STRING := "time (ms)";
     
     constant C_H_MIDDLE_PLOT : STD_LOGIC_VECTOR(11 downto 0)
         := C_H_LOW_LIMIT + ('0'&(C_H_UP_LIMIT(11 downto 1)-C_H_LOW_LIMIT(11 downto 1)));
+    
+    -----------------------------------------------------------------------------------
+    
+    -- Analog Plot
+    type T_COLORS_ARRAY is ARRAY(0 to C_NB_NEURONS_ANALOG-1) of STD_LOGIC_VECTOR(23 downto 0);
+    
+    constant C_ANALOG_PLOT_COLORS : T_COLORS_ARRAY := (
+        0 => C_BLUE,
+        1 => C_RED,
+        2 => C_GREEN,
+        3 => C_ORANGE
+    );
     
 end package;
 

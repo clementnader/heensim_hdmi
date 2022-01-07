@@ -47,6 +47,8 @@ set_property -dict {PACKAGE_PIN Y16  IOSTANDARD LVCMOS33 PULLTYPE PULLUP} [get_p
 set_property -dict {PACKAGE_PIN N15  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNL];  # BTNL
 set_property -dict {PACKAGE_PIN P16  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNC];  # BTNC
 #set_property -dict {PACKAGE_PIN R18  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNR];  # BTNR
+set_property -dict {PACKAGE_PIN R16  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTND];  # "BTND"
+#set_property -dict {PACKAGE_PIN T18  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNU];  # "BTNU"
 
 # ----------------------------------------------------------------------------
 # User LEDs

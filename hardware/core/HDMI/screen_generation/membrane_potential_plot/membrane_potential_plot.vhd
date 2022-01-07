@@ -61,9 +61,11 @@ architecture Behavioral of membrane_potential_plot is
             G_RANGE_VCNT3 : INTEGER
         );
         port (
-            i_clk      : in STD_LOGIC;
-            i_hcounter : in STD_LOGIC_VECTOR(11 downto 0);
-            i_vcounter : in STD_LOGIC_VECTOR(11 downto 0);
+            i_clk        : in STD_LOGIC;
+            i_hcounter   : in STD_LOGIC_VECTOR(11 downto 0);
+            i_vcounter   : in STD_LOGIC_VECTOR(11 downto 0);
+            i_plot_ext   : in BOOLEAN;
+            i_in_between : in BOOLEAN;
             
             o_contours_pixel : out BOOLEAN
         );
@@ -71,8 +73,9 @@ architecture Behavioral of membrane_potential_plot is
             
     component write_axes_and_ticks_label_analog
         generic (
-            G_V_UP_LIMIT  : STD_LOGIC_VECTOR(11 downto 0);
-            G_V_LOW_LIMIT : STD_LOGIC_VECTOR(11 downto 0)
+            G_V_UP_LIMIT_ALL  : STD_LOGIC_VECTOR(11 downto 0);
+            G_V_LOW_LIMIT_ALL : STD_LOGIC_VECTOR(11 downto 0);
+            G_V_LOW_LIMIT_1   : STD_LOGIC_VECTOR(11 downto 0)
         );
         port (
             i_clk      : in STD_LOGIC;
@@ -87,22 +90,26 @@ architecture Behavioral of membrane_potential_plot is
     
     -----------------------------------------------------------------------------------
     
-    constant C_V_NB_POINTS : INTEGER := (C_TARGET_MAX+1) + (C_NB_NEURONS_ANALOG-1)*C_PLOT_SHIFT_BETWEEN_NEURONS;  -- 651
-        
-    constant C_V_LOW_LIMIT    : STD_LOGIC_VECTOR(11 downto 0) := C_V_VISIBLE - x"028";
-    constant C_V_UP_LIMIT_ALL : STD_LOGIC_VECTOR(11 downto 0) := C_V_LOW_LIMIT - C_V_NB_POINTS;
-    constant C_V_UP_LIMIT_1   : STD_LOGIC_VECTOR(11 downto 0) := C_V_LOW_LIMIT - (C_TARGET_MAX+1);
+    constant C_V_NB_POINTS : INTEGER := (C_TARGET_MAX+1) * C_NB_NEURONS_ANALOG + 2 * (C_NB_NEURONS_ANALOG-1);  -- 730
     
-    constant C_RANGE_VCNT1 : INTEGER := 50;  -- vertical tick every 50 neurons
-    constant C_RANGE_VCNT2 : INTEGER := 1;   -- vertical tick every 50 neurons
-    constant C_RANGE_VCNT3 : INTEGER := 1;   -- vertical tick every 50 neurons
+    constant C_V_LOW_LIMIT_ALL : STD_LOGIC_VECTOR(11 downto 0) := C_V_VISIBLE - C_OFFSET;
+    constant C_V_UP_LIMIT_ALL  : STD_LOGIC_VECTOR(11 downto 0) := C_V_LOW_LIMIT_ALL - C_V_NB_POINTS;
+    constant C_V_LOW_LIMIT_1   : STD_LOGIC_VECTOR(11 downto 0) := C_V_UP_LIMIT_ALL + (C_TARGET_MAX+1);
+    
+    -----------------------------------------------------------------------------------
+    
+    constant C_RANGE_VCNT1 : INTEGER := C_TARGET_MAX/2;   -- vertical tick every 25 mV
+    constant C_RANGE_VCNT2 : INTEGER := C_RANGE_VCNT1/5;  -- vertical tick every  5 mV
+    constant C_RANGE_VCNT3 : INTEGER := C_RANGE_VCNT2/1;  -- vertical tick every  5 mV
     
     -----------------------------------------------------------------------------------
     
     -- Signal that converts the vertical position to the correspondant analog plot value
-    type T_SHIFTED_VCOUNTER_ARRAY is ARRAY(0 to C_NB_NEURONS_ANALOG-1) of INTEGER range 0 to C_TARGET_MAX;
-    
-    signal shifted_vcounter : T_SHIFTED_VCOUNTER_ARRAY;
+    signal plot_cnt         : INTEGER range 0 to C_NB_NEURONS_ANALOG-1;
+    signal shifted_vcounter : INTEGER range 0 to C_TARGET_MAX;
+    signal space_between    : INTEGER range 0 to 2;
+    signal in_vplot         : BOOLEAN;
+    signal in_between       : BOOLEAN;
     
     -- Signal of the current memory address to read
     signal mem_rd_addr : STD_LOGIC_VECTOR(9 downto 0);
@@ -114,28 +121,34 @@ architecture Behavioral of membrane_potential_plot is
     
 begin
     
+    in_between <= (space_between > 0)
+            and (i_vcounter <= C_V_LOW_LIMIT_ALL and i_vcounter > C_V_UP_LIMIT_ALL);
+    
     plot_contours_inst : plot_contours
         generic map (
             G_NB_V_POINTS => C_V_NB_POINTS,
             G_V_UP_LIMIT  => C_V_UP_LIMIT_ALL,
-            G_V_LOW_LIMIT => C_V_LOW_LIMIT,
+            G_V_LOW_LIMIT => C_V_LOW_LIMIT_ALL,
             
             G_RANGE_VCNT1 => C_RANGE_VCNT1,
             G_RANGE_VCNT2 => C_RANGE_VCNT2,
             G_RANGE_VCNT3 => C_RANGE_VCNT3
         )
         port map (
-            i_clk      => i_clk,
-            i_hcounter => i_hcounter,
-            i_vcounter => i_vcounter,
+            i_clk        => i_clk,
+            i_hcounter   => i_hcounter,
+            i_vcounter   => i_vcounter,
+            i_plot_ext   => True,
+            i_in_between => in_between,
             
             o_contours_pixel => o_contours_pixel
         );
     
     write_axes_and_ticks_label_analog_inst : write_axes_and_ticks_label_analog
         generic map (
-            G_V_UP_LIMIT  => C_V_UP_LIMIT_ALL,
-            G_V_LOW_LIMIT => C_V_LOW_LIMIT
+            G_V_UP_LIMIT_ALL  => C_V_UP_LIMIT_ALL,
+            G_V_LOW_LIMIT_ALL => C_V_LOW_LIMIT_ALL,
+            G_V_LOW_LIMIT_1   => C_V_LOW_LIMIT_1
         )
         port map (
             i_clk      => i_clk,
@@ -149,18 +162,34 @@ begin
     
     -----------------------------------------------------------------------------------
     
+    in_vplot <= (space_between = 0)
+            and (i_vcounter <= C_V_LOW_LIMIT_ALL and i_vcounter > C_V_UP_LIMIT_ALL);
+    
     shifted_vcounters_proc : process(i_clk)
     begin
         if rising_edge(i_clk) then
             
             if i_hcounter = 0 then
-                for i in 0 to C_NB_NEURONS_ANALOG-1 loop
-                    if i_vcounter = C_V_UP_LIMIT_1+1-50*i then
-                        shifted_vcounter(i) <= C_V_NB_POINTS-1;
-                    elsif i_vcounter <= C_V_LOW_LIMIT-50*i and i_vcounter > C_V_UP_LIMIT_1+1-50*i then
-                        shifted_vcounter(i) <= shifted_vcounter(i) - 1;
+                
+                if i_vcounter = C_V_UP_LIMIT_ALL+1 then
+                    
+                    plot_cnt         <= 0;
+                    shifted_vcounter <= C_TARGET_MAX;
+                    space_between    <= 0;
+                    
+                elsif i_vcounter <= C_V_LOW_LIMIT_ALL and i_vcounter > C_V_UP_LIMIT_ALL+1 then
+                    
+                    if shifted_vcounter = 0 then
+                        shifted_vcounter <= C_TARGET_MAX;
+                        space_between    <= 2;
+                    elsif space_between > 0 then
+                        space_between <= space_between-1;
+                    else
+                        shifted_vcounter <= shifted_vcounter - 1;
                     end if;
-                end loop;
+                    
+                end if;
+                
             end if;
             
         end if;
@@ -173,7 +202,7 @@ begin
     begin
         if rising_edge(i_clk) then
             
-            if i_vcounter <= C_V_LOW_LIMIT and i_vcounter > C_V_UP_LIMIT_ALL then
+            if in_vplot then
                 -- we need three time periods before reading from the memory
                 if i_hcounter = C_H_LOW_LIMIT - 4 then
                     o_mem_rd_en <= '1';
@@ -194,9 +223,9 @@ begin
     begin
         if rising_edge(i_clk) then
             
-            if i_vcounter <= C_V_LOW_LIMIT and i_vcounter > C_V_UP_LIMIT_ALL then
+            if in_vplot then
                 if i_hcounter = C_H_LOW_LIMIT - 1 then
-                    mem_column_before  <= (others => '0');
+                    mem_column_before  <= i_mem_rd_data;
                     mem_column_current <= i_mem_rd_data;
                 elsif i_hcounter >= C_H_LOW_LIMIT and i_hcounter < C_H_UP_LIMIT then
                     mem_column_before  <= mem_column_current;
@@ -210,6 +239,10 @@ begin
     -----------------------------------------------------------------------------------
     
     color_proc : process(i_clk)
+        
+        variable analog_value_before_i  : STD_LOGIC_VECTOR(C_ANALOG_PLOT_VALUE_SIZE-1 downto 0);
+        variable analog_value_current_i : STD_LOGIC_VECTOR(C_ANALOG_PLOT_VALUE_SIZE-1 downto 0);
+        
     begin
         if rising_edge(i_clk) then
             
@@ -218,14 +251,27 @@ begin
                 
                 o_dot_pixel(i) <= False;
                 
-                if i_vcounter <= C_V_LOW_LIMIT-50*i and i_vcounter > C_V_UP_LIMIT_1+1-50*i
+                if in_vplot and plot_cnt = i
                  and i_hcounter >= C_H_LOW_LIMIT and i_hcounter < C_H_UP_LIMIT then
                     
                     -- Plot the analog value
                     if i_current_timestamp(31 downto 10) /= 0 or i_current_timestamp >= i_hcounter-C_H_LOW_LIMIT then
-                        if mem_column_current(C_ANALOG_PLOT_VALUE_SIZE*(i+1)-1 downto C_ANALOG_PLOT_VALUE_SIZE*i) = shifted_vcounter(i) then
-                            o_dot_pixel(i) <= True;
+                        
+                        analog_value_before_i  := mem_column_before(C_ANALOG_PLOT_VALUE_SIZE*(i+1)-1 downto C_ANALOG_PLOT_VALUE_SIZE*i);
+                        analog_value_current_i := mem_column_current(C_ANALOG_PLOT_VALUE_SIZE*(i+1)-1 downto C_ANALOG_PLOT_VALUE_SIZE*i);
+                        
+                        if analog_value_current_i < analog_value_before_i then
+                            if analog_value_current_i <= shifted_vcounter
+                             and analog_value_before_i >= shifted_vcounter then
+                                o_dot_pixel(i) <= True;
+                            end if;
+                        else
+                            if analog_value_current_i >= shifted_vcounter
+                             and analog_value_before_i <= shifted_vcounter then
+                                o_dot_pixel(i) <= True;
+                            end if;
                         end if;
+                        
                     end if;
                     
                 end if;

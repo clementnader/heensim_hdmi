@@ -49,30 +49,32 @@ architecture Behavioral of config_hdmi_chip_i2c_zc706 is
         ----------------------------------------------------------
         -- ADV7511 Configuration (from ADV7511_Programming_Guide)
         ----------------------------------------------------------
-    
-        -------------------
-        -- Power-up the Tx
-        -------------------
-        x"4110",
+        
         -----------------------------------------------
         -- Fixed Registers That Must Be Set (Table 14)
         -----------------------------------------------
         x"9803", x"9AE0", x"9C30", x"9D61", x"A2A4", x"A3A4", x"E0D0",
         x"F900", -- Fixed I2C Address, this should be set to a non-conflicting I2C address (set to 0x00)
-    
+        
+        -----------------
+        -- Main Power Up
+        -----------------
+        x"4110",
+        
         ---------------------------------------
         -- Input mode (Input ID: 0 - Table 16)
         ---------------------------------------
-        x"1500", -- 24 bit RGB 4:4:4 or YCbCr 4:4:4 (separate syncs)
-        x"1630", -- Output Format: 4:4:4, Color Depth for Input Video Data: 8 bit, Input Style: 0, Output Color Space: RGB
-        x"1700", -- VSync and HSync polarities pass through, zero order interpolation, DE Generator Disabled
-        x"4800", -- Normal Video Input Bus Order, Video Input Justification: 0
-        x"D03C", -- No sync pulse
+        x"1500", -- Input ID: 0 -> 24 bit RGB 4:4:4 or YCbCr 4:4:4 (separate syncs)
+        x"1630", -- Output Format: 4:4:4, Color Depth for Input Video Data: 8 bit
+        x"1700", -- VSync and HSync polarities pass through
+        x"4800", -- Normal Video Input Bus Order
+--         x"D03C", -- No sync pulse
+        
         ---------------
         -- Output mode
         ---------------
         x"AF04", -- DVI mode
-    
+        
         -----------------------------------------------
         -- Conversion from Input to Output
         -- Table 55 - Identity Matrix (Input = Output)

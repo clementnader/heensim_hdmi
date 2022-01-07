@@ -47,24 +47,26 @@ architecture Behavioral of config_hdmi_chip_i2c_zedboard is
         -- ADV7511 Configuration (from ADV7511_Programming_Guide)
         ----------------------------------------------------------
         
-        -------------------
-        -- Power-up the Tx
-        -------------------
-        x"4110",
         -----------------------------------------------
         -- Fixed Registers That Must Be Set (Table 14)
         -----------------------------------------------
         x"9803", x"9AE0", x"9C30", x"9D61", x"A2A4", x"A3A4", x"E0D0",
         x"F900", -- Fixed I2C Address, this should be set to a non-conflicting I2C address (set to 0x00)
         
+        -----------------
+        -- Main Power Up
+        -----------------
+        x"4110",
+        
         ---------------------------------------
         -- Input mode (Input ID: 1 - Table 18)
         ---------------------------------------
-        x"1501", -- 16, 20, 24 bit YCbCr 4:2:2 (separate syncs)
-        x"163C", -- Output Format: 4:4:4, Color Depth for Input Video Data: 8 bit, Input Style: 3, Output Color Space: RGB
-        x"1700", -- VSync and HSync polarities pass through, zero order interpolation, DE Generator Disabled
+        x"1501", -- Input ID: 1 -> 16, 20, 24 bit YCbCr 4:2:2 (separate syncs)
+        x"163C", -- Output Format: 4:4:4, Color Depth for Input Video Data: 8 bit, Input Style: 3
+        x"1700", -- VSync and HSync polarities pass through, 4:2:2 to 4:4:4 Up Conversion Method: zero order interpolation
         x"4808", -- Normal Video Input Bus Order, Video Input Justification: right justified
-        x"D03C", -- No sync pulse
+--        x"D03C", -- No sync pulse
+        
         ---------------
         -- Output mode
         ---------------
@@ -72,14 +74,14 @@ architecture Behavioral of config_hdmi_chip_i2c_zedboard is
         
         -------------------------------------------------------------
         -- Conversion from Input to Output
-        -- Table 42 - SDTV YCbCr (Limited Range) to RGB (Full Range)
+        -- Table 40 - HDTV YCbCr (Limited Range) to RGB (Full Range)
         -------------------------------------------------------------
         --     A1                  A2                  A3                  A4
-        x"18E6", x"1969",   x"1A04", x"1BAC",   x"1C00", x"1D00",   x"1E1C", x"1F81",
+        x"18E7", x"1934",   x"1A04", x"1BAD",   x"1C00", x"1D00",   x"1E1C", x"1F1B",
         --     B1                  B2                  B3                  B4
-        x"201C", x"21BC",   x"2204", x"23AD",   x"241E", x"256E",   x"2602", x"2720",
+        x"201D", x"21DC",   x"2204", x"23AD",   x"241F", x"2524",   x"2601", x"2735",
         --     C1                  C2                  C3                  C4
-        x"281F", x"29FE",   x"2A04", x"2BAD",   x"2C08", x"2D1A",   x"2E1B", x"2FA9",
+        x"2800", x"2900",   x"2A04", x"2BAD",   x"2C08", x"2D7C",   x"2E1B", x"2F77",
         
         ------------------------
         -- End of configuration

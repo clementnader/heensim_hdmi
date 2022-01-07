@@ -29,12 +29,12 @@ library work;
 
 entity write_text_integer is
     generic (
-       G_TEXT_LENGTH : INTEGER
+       G_NB_DIGITS : INTEGER
     );
     port (
         i_clk         : in STD_LOGIC;
         i_do_display  : in BOOLEAN;
-        i_display_int : in INTEGER range 0 to 10**G_TEXT_LENGTH-1;
+        i_display_int : in T_DIGITS_ARRAY(G_NB_DIGITS-1 downto 0);
         i_text_hpos   : in STD_LOGIC_VECTOR(11 downto 0);  -- horizontal position of the top left corner of the text
         i_text_vpos   : in STD_LOGIC_VECTOR(11 downto 0);  -- vertical position of the top left corner of the text
         i_hcounter    : in STD_LOGIC_VECTOR(11 downto 0);  -- current pixel horizontal position
@@ -47,28 +47,12 @@ end write_text_integer;
 
 architecture Behavioral of write_text_integer is
     
-    component split_integer_to_digits
-        generic (
-           G_NB_DIGITS : INTEGER
-        );
-        port (
-            i_clk     : in STD_LOGIC;
-            i_integer : in INTEGER range 0 to 10**G_NB_DIGITS-1;
-            
-            o_digits : out T_DIGITS_ARRAY(0 to G_NB_DIGITS-1)
-        );
-    end component;
-    
-    -----------------------------------------------------------------------------------
-    
-    signal digits : T_DIGITS_ARRAY(0 to G_TEXT_LENGTH-1);
-    
     signal within_range : BOOLEAN;
     
     signal shifted_hpos : STD_LOGIC_VECTOR(11 downto 0);
     signal shifted_vpos : STD_LOGIC_VECTOR(11 downto 0);
     
-    signal char_pos_in_text : INTEGER range 0 to G_TEXT_LENGTH-1;  -- the position of the current character in the given text
+    signal char_pos_in_text : INTEGER range 0 to G_NB_DIGITS-1;  -- the position of the current character in the given text
     signal col_pos_in_char  : INTEGER range 0 to C_FONT_WIDTH-1;   -- the current column position in the character
     signal char_code        : STD_LOGIC_VECTOR(6 downto 0);        -- character ASCII code of the current character
     
@@ -77,20 +61,7 @@ architecture Behavioral of write_text_integer is
     
 begin
     
-    split_integer_to_digits_inst : split_integer_to_digits
-        generic map (
-           G_NB_DIGITS => G_TEXT_LENGTH
-        )
-        port map (
-            i_clk     => i_clk,
-            i_integer => i_display_int,
-            
-            o_digits => digits
-        );
-    
-    -----------------------------------------------------------------------------------
-    
-    within_range <= (i_hcounter >= i_text_hpos) and (i_hcounter < i_text_hpos + (C_FONT_WIDTH * G_TEXT_LENGTH))
+    within_range <= (i_hcounter >= i_text_hpos) and (i_hcounter < i_text_hpos + (C_FONT_WIDTH * G_NB_DIGITS))
                 and (i_vcounter >= i_text_vpos) and (i_vcounter < i_text_vpos + C_FONT_HEIGHT);
     
     shifted_hpos <= i_hcounter - i_text_hpos;
@@ -99,7 +70,7 @@ begin
     char_pos_in_text <= to_integer(unsigned(shifted_hpos(shifted_hpos'high downto C_FONT_WIDTH_POW)));
     col_pos_in_char  <= to_integer(unsigned(shifted_hpos(C_FONT_WIDTH_POW-1 downto 0)-1));  -- the minus one is because we need one clock period to process the data but hcounter increments continuously
     
-    char_code <= C_ZERO_CHAR + digits(char_pos_in_text) when i_do_display and digits(char_pos_in_text) /= -1
+    char_code <= C_ZERO_CHAR + i_display_int(G_NB_DIGITS-1 - char_pos_in_text) when i_do_display and i_display_int(char_pos_in_text) /= -1
             else C_SPACE_CHAR;
     
     row_addr_in_table <= char_code & shifted_vpos(3 downto 0);

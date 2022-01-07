@@ -80,22 +80,21 @@ package neurons_pkg is
     constant C_ANALOG_MAX_VALUE : INTEGER := -3000;
     
     constant C_TARGET_MIN : INTEGER := 0;
-    constant C_TARGET_MAX : INTEGER := 500;
+    constant C_TARGET_MAX : INTEGER := 180;
     
-    constant C_ANALOG_TRANSFORM_DIVIDER : INTEGER := (C_ANALOG_MAX_VALUE-C_ANALOG_MIN_VALUE)/(C_TARGET_MAX-C_TARGET_MIN);  -- 10
-    constant C_ANALOG_TRANSFORM_ADDER   : INTEGER := C_TARGET_MIN - C_ANALOG_MIN_VALUE/C_ANALOG_TRANSFORM_DIVIDER;  -- 800
-    
-    constant C_ANALOG_PLOT_VALUE_SIZE : INTEGER := integer(ceil(log2(real(C_TARGET_MAX))));  -- 9
+    constant C_ANALOG_PLOT_VALUE_SIZE : INTEGER := integer(ceil(log2(real(C_TARGET_MAX))));  -- 8
     
     constant C_NB_NEURONS_ANALOG : INTEGER := 4;
     
-    constant C_ANALOG_MEM_SIZE : INTEGER := C_ANALOG_PLOT_VALUE_SIZE*C_NB_NEURONS_ANALOG;
+    constant C_ANALOG_MEM_SIZE : INTEGER := C_ANALOG_PLOT_VALUE_SIZE*C_NB_NEURONS_ANALOG;  -- 32
     
     -----------------------------------------------------------------------------------
     
-    function transform_analog_value (
-        analog_value : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0)
-    ) return STD_LOGIC_VECTOR;
+    constant C_ANALOG_TRANSFORM_DIVIDER : REAL    := real(C_ANALOG_MAX_VALUE-C_ANALOG_MIN_VALUE) / real(C_TARGET_MAX-C_TARGET_MIN);
+    constant C_ANALOG_TRANSFORM_ADDER   : INTEGER := C_TARGET_MIN - C_ANALOG_MIN_VALUE;
+    
+    constant C_ANALOG_DIV_PRECISION_BITS : INTEGER := 16;
+    constant C_ANALOG_DIV_MULTIPLIER     : INTEGER := integer(ceil(real(2**C_ANALOG_DIV_PRECISION_BITS)/C_ANALOG_TRANSFORM_DIVIDER));
     
 end package;
 
@@ -155,33 +154,6 @@ package body neurons_pkg is
             
             return id_value;
         
-    end function;
-    
-    -----------------------------------------------------------------------------------
-    
-    -- Convert a signed on 16 bits from -8,000 to -3,000
-    --     to a value between 0 and 500 in a std_logic_vector on 9 bits
-    function transform_analog_value (
-            analog_value : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0)
-        ) return STD_LOGIC_VECTOR is
-            constant C_ANALOG_DIV_PRECISION_BITS : INTEGER := 16;
-            constant C_ANALOG_DIV_MULTIPLIER     : INTEGER := 2**C_ANALOG_DIV_PRECISION_BITS/C_ANALOG_TRANSFORM_DIVIDER;
-            
-            variable multiplied_value : SIGNED(C_ANALOG_VALUE_SIZE+C_ANALOG_DIV_PRECISION_BITS-1 downto 0);
-            variable divided_value    : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
-            variable result_value     : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
-            
-            variable target_value : STD_LOGIC_VECTOR(C_ANALOG_PLOT_VALUE_SIZE-1 downto 0);
-            
-        begin
-            multiplied_value := analog_value*C_ANALOG_DIV_MULTIPLIER;
-            divided_value    := multiplied_value(C_ANALOG_VALUE_SIZE+C_ANALOG_DIV_PRECISION_BITS-1 downto C_ANALOG_DIV_PRECISION_BITS);
-            result_value     := divided_value + C_ANALOG_TRANSFORM_ADDER;
-            
-            target_value := std_logic_vector(result_value(C_ANALOG_PLOT_VALUE_SIZE-1 downto 0));
-            
-            return target_value;
-            
     end function;
     
 end package body;

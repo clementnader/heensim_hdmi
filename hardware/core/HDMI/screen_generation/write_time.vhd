@@ -62,12 +62,12 @@ architecture Behavioral of write_time is
     
     component write_text_integer
         generic (
-           G_TEXT_LENGTH : INTEGER
+           G_NB_DIGITS : INTEGER
         );
         port (
             i_clk         : in STD_LOGIC;
             i_do_display  : in BOOLEAN;
-            i_display_int : in INTEGER range 0 to 10**G_TEXT_LENGTH-1;
+            i_display_int : in T_DIGITS_ARRAY(G_NB_DIGITS-1 downto 0);
             i_text_hpos   : in STD_LOGIC_VECTOR(11 downto 0);  -- horizontal position of the top left corner of the text
             i_text_vpos   : in STD_LOGIC_VECTOR(11 downto 0);  -- vertical position of the top left corner of the text
             i_hcounter    : in STD_LOGIC_VECTOR(11 downto 0);  -- current pixel horizontal position
@@ -80,16 +80,12 @@ architecture Behavioral of write_time is
     -----------------------------------------------------------------------------------
     
     signal cnt_ms  : INTEGER range 0 to 999;
-    signal cnt_s   : INTEGER range 0 to 59;
-    signal cnt_mn  : INTEGER range 0 to 59;
-    signal cnt_hr  : INTEGER range 0 to 23;
-    signal cnt_day : INTEGER range 0 to 63;
+    signal cnt_s   : T_DIGITS_ARRAY(1 downto 0);
+    signal cnt_mn  : T_DIGITS_ARRAY(1 downto 0);
+    signal cnt_hr  : T_DIGITS_ARRAY(1 downto 0);
+    signal cnt_day : T_DIGITS_ARRAY(1 downto 0);
     
     signal last_timestamp : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);  -- signal to know when there is a change in the timestamp value
---    signal last_cnt_ms    : INTEGER range 0 to 999;
---    signal last_cnt_s     : INTEGER range 0 to 59;
---    signal last_cnt_mn    : INTEGER range 0 to 59;
---    signal last_cnt_hr    : INTEGER range 0 to 23;
     
     -----------------------------------------------------------------------------------
     
@@ -189,31 +185,55 @@ begin
             
             if i_current_timestamp = 0 then
                 cnt_ms  <= 0;
-                cnt_s   <= 0;
-                cnt_mn  <= 0;
-                cnt_hr  <= 0;
-                cnt_day <= 0;
+                cnt_s   <= (1 => -1, 0 => 0);
+                cnt_mn  <= (1 => -1, 0 => 0);
+                cnt_hr  <= (1 => -1, 0 => 0);
+                cnt_day <= (1 => -1, 0 => 0);
             elsif last_timestamp /= i_current_timestamp then
                 if cnt_ms < 999 then
                     cnt_ms <= cnt_ms + 1;
                 else
                     cnt_ms <= 0;
-                    if cnt_s < 59 then
-                        cnt_s <= cnt_s + 1;
-                    else
-                        cnt_s <= 0;
-                        if cnt_mn < 59 then
-                            cnt_mn <= cnt_mn + 1;
+                    if cnt_s(1) /= 5 or cnt_s(0) /= 9 then
+                        if cnt_s(0) < 9 then
+                            cnt_s(0) <= cnt_s(0) + 1;
+                        elsif cnt_s(1) = -1 then
+                            cnt_s(1) <= 1;
                         else
-                            cnt_mn <= 0;
-                            if cnt_hr < 23 then
-                                cnt_hr <= cnt_hr + 1;
+                            cnt_s(1) <= cnt_s(1) + 1;
+                        end if;
+                    else
+                        cnt_s <= (1 => -1, 0 => 0);
+                        if cnt_mn(1) /= 5 or cnt_mn(0) /= 9 then
+                            if cnt_mn(0) < 9 then
+                                cnt_mn(0) <= cnt_mn(0) + 1;
+                            elsif cnt_mn(1) = -1 then
+                                cnt_mn(1) <= 1;
                             else
-                                cnt_hr <= 0;
-                                if cnt_day < 63 then
-                                    cnt_day <= cnt_day + 1;
+                                cnt_mn(1) <= cnt_mn(1) + 1;
+                            end if;
+                        else
+                            cnt_mn <= (1 => -1, 0 => 0);
+                            if cnt_hr(1) /= 2 or cnt_hr(0) /= 3 then
+                                if cnt_hr(0) < 9 then
+                                    cnt_hr(0) <= cnt_hr(0) + 1;
+                                elsif cnt_hr(1) = -1 then
+                                    cnt_hr(1) <= 1;
                                 else
-                                    cnt_day <= 0;
+                                    cnt_hr(1) <= cnt_hr(1) + 1;
+                                end if;
+                            else
+                                cnt_hr <= (1 => -1, 0 => 0);
+                                if cnt_day(1) /= 6 or cnt_day(0) /= 3 then
+                                    if cnt_day(0) < 9 then
+                                        cnt_day(0) <= cnt_day(0) + 1;
+                                    elsif cnt_day(1) = -1 then
+                                        cnt_day(1) <= 1;
+                                    else
+                                        cnt_day(1) <= cnt_day(1) + 1;
+                                    end if;
+                                else
+                                    cnt_day <= (1 => -1, 0 => 0);
                                 end if;
                             end if;
                         end if;
@@ -224,114 +244,38 @@ begin
         end if;
     end process;
     
---    ms_counters_proc : process(i_clk)
---    begin
---        if rising_edge(i_clk) then
-            
---            last_timestamp <= i_current_timestamp;
-            
---            if i_current_timestamp = 0 then
---                cnt_ms <= 0;
---            elsif last_timestamp /= i_current_timestamp then
---                if cnt_ms < 999 then
---                    cnt_ms <= cnt_ms + 1;
---                else
---                    cnt_ms <= 0;
---                end if;
---            end if;
-            
---        end if;
---    end process;
-    
---    s_counter_proc : process(i_clk)
---    begin
---        if rising_edge(i_clk) then
-            
---            last_cnt_ms <= cnt_ms;
-            
---            if i_current_timestamp = 0 then
---                cnt_s <= 0;
---            elsif last_cnt_ms = 999 and cnt_ms = 0 then
---                if cnt_s < 59 then
---                    cnt_s <= cnt_s + 1;
---                else
---                    cnt_s <= 0;
---                end if;
---            end if;
-            
---        end if;
---    end process;
-    
---    mn_counter_proc : process(i_clk)
---    begin
---        if rising_edge(i_clk) then
-            
---            last_cnt_s <= cnt_s;
-            
---            if i_current_timestamp = 0 then
---                cnt_mn <= 0;
---            elsif last_cnt_s = 59 and cnt_s = 0 then
---                if cnt_mn < 59 then
---                    cnt_mn <= cnt_mn + 1;
---                else
---                    cnt_mn <= 0;
---                end if;
---            end if;
-            
---        end if;
---    end process;
-    
---    hr_counter_proc : process(i_clk)
---    begin
---        if rising_edge(i_clk) then
-            
---            last_cnt_mn <= cnt_mn;
-            
---            if i_current_timestamp = 0 then
---                cnt_hr <= 0;
---            elsif last_cnt_mn = 59 and cnt_mn = 0 then
---                if cnt_hr < 23 then
---                    cnt_hr <= cnt_hr + 1;
---                else
---                    cnt_hr <= 0;
---                end if;
---            end if;
-            
---        end if;
---    end process;
-    
---    day_counter_proc : process(i_clk)
---    begin
---        if rising_edge(i_clk) then
-            
---            last_cnt_hr <= cnt_hr;
-            
---            if i_current_timestamp = 0 then
---                cnt_day <= 0;
---            elsif last_cnt_hr = 23 and cnt_hr = 0 then
---                if cnt_day < 63 then
---                    cnt_day <= cnt_day + 1;
---                else
---                    cnt_day <= 0;
---                end if;
---            end if;
-            
---        end if;
---    end process;
-    
     -----------------------------------------------------------------------------------
     
-    h_time_hr_i <= 0 when cnt_day = 0
-              else 1;
-    
-    h_time_mn_i <= 0 when cnt_day = 0 and cnt_hr = 0
-              else 1 when cnt_day = 0 and cnt_hr /= 0
-              else 2;
-    
-    h_time_s_i <= 0 when cnt_day = 0 and cnt_hr = 0 and cnt_mn = 0
-             else 1 when cnt_day = 0 and cnt_hr = 0 and cnt_mn /= 0
-             else 2 when cnt_day = 0 and cnt_hr /= 0
-             else 3;
+    get_position_time_labels_proc : process(i_clk)
+    begin
+        if rising_edge(i_clk) then
+            
+            if cnt_day = (1 => -1, 0 => 0) then
+                h_time_hr_i <= 0;
+            else
+                h_time_hr_i <= 1;
+            end if;
+            
+            if cnt_day = (1 => -1, 0 => 0) and cnt_hr = (1 => -1, 0 => 0) then
+                h_time_mn_i <= 0;
+            elsif cnt_day = (1 => -1, 0 => 0) and cnt_hr /= (1 => -1, 0 => 0) then
+                h_time_mn_i <= 1;
+            else
+                h_time_mn_i <= 2;
+            end if;
+            
+            if cnt_day = (1 => -1, 0 => 0) and cnt_hr = (1 => -1, 0 => 0) and cnt_mn = (1 => -1, 0 => 0) then
+                h_time_s_i <= 0;
+            elsif cnt_day = (1 => -1, 0 => 0) and cnt_hr = (1 => -1, 0 => 0) and cnt_mn /= (1 => -1, 0 => 0) then
+                h_time_s_i <= 1;
+            elsif cnt_day = (1 => -1, 0 => 0) and cnt_hr /= (1 => -1, 0 => 0) then
+                h_time_s_i <= 2;
+            else
+                h_time_s_i <= 3;
+            end if;
+            
+        end if;
+    end process;
     
     -----------------------------------------------------------------------------------
     
@@ -346,9 +290,9 @@ begin
     
     ------------------------------------------
     
-    time_mn_bool  <= not (cnt_mn = 0 and h_time_mn_i = 0);
-    time_hr_bool  <= not (cnt_hr = 0 and h_time_hr_i = 0);
-    time_day_bool <= not (cnt_day = 0);
+    time_mn_bool  <= not (cnt_mn = (1 => -1, 0 => 0) and h_time_mn_i = 0);
+    time_hr_bool  <= not (cnt_hr = (1 => -1, 0 => 0) and h_time_hr_i = 0);
+    time_day_bool <= not (cnt_day = (1 => -1, 0 => 0));
     
     -----------------------------------------------------------------------------------
     
@@ -372,7 +316,7 @@ begin
     
     write_text_integer_inst_s : write_text_integer
         generic map (
-           G_TEXT_LENGTH => 2
+           G_NB_DIGITS => 2
         )
         port map (
             i_clk         => i_clk,
@@ -406,7 +350,7 @@ begin
     
     write_text_integer_inst_mn : write_text_integer
         generic map (
-           G_TEXT_LENGTH => 2
+           G_NB_DIGITS => 2
         )
         port map (
             i_clk         => i_clk,
@@ -440,7 +384,7 @@ begin
     
     write_text_integer_inst_hr : write_text_integer
         generic map (
-           G_TEXT_LENGTH => 2
+           G_NB_DIGITS => 2
         )
         port map (
             i_clk         => i_clk,
@@ -474,7 +418,7 @@ begin
     
     write_text_integer_inst_day : write_text_integer
         generic map (
-           G_TEXT_LENGTH => 2
+           G_NB_DIGITS => 2
         )
         port map (
             i_clk         => i_clk,

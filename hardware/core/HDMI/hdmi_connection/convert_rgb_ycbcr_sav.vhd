@@ -2,9 +2,9 @@
 -- Company: 
 -- Engineer: 
 -- 
--- Create Date: 12/01/2021 10:22:55 AM
+-- Create Date: 12/30/2021 10:36:15 PM
 -- Design Name: 
--- Module Name: convert_rgb_ycbcr - Behavioral
+-- Module Name: convert_rgb_ycbcr_sav - Behavioral
 -- Project Name: 
 -- Target Devices: 
 -- Tool Versions: 
@@ -23,7 +23,7 @@ library IEEE;
     use IEEE.STD_LOGIC_UNSIGNED.ALL;
 
 
-entity convert_rgb_ycbcr is
+entity convert_rgb_ycbcr_sav is
     port (
         i_clk   : in STD_LOGIC;
         i_r     : in STD_LOGIC_VECTOR(7 downto 0);
@@ -40,10 +40,10 @@ entity convert_rgb_ycbcr is
         o_hsync : out STD_LOGIC;
         o_vsync : out STD_LOGIC
     );
-end convert_rgb_ycbcr;
+end convert_rgb_ycbcr_sav;
 
 
-architecture Behavioral of convert_rgb_ycbcr is
+architecture Behavioral of convert_rgb_ycbcr_sav is
     
     signal latch_de    : STD_LOGIC;
     signal latch_hsync : STD_LOGIC;
@@ -93,23 +93,23 @@ begin
         if rising_edge(i_clk) then
             
             -- Y --
-            intermed_y_sum_r <= x"0000" + (i_r&"00000")   + (i_r&"0000")  - i_r;               -- + (r<<5) + (r<<4) - r
-            intermed_y_sum_g <= x"0000" + (i_g&"0000000") + (i_g&"00000") - (i_g&"00") + i_g;  -- + (g<<7) + (g<<5) - (g<<2) + g
-            intermed_y_sum_b <= x"0000" + (i_b&"0000");                                        -- + (b<<4)
+            intermed_y_sum_r <= x"0000" + (i_r&"000000")  + (i_r&"0");          -- + (r<<6) + (r<<1)
+            intermed_y_sum_g <= x"0000" + (i_g&"0000000") + i_g;                -- + (g<<7) + g
+            intermed_y_sum_b <= x"0000" + (i_b&"0000")    + (i_b&"000") + i_b;  -- + (b<<4) + (b<<3) + b
             
             intermed_y <= intermed_y_sum_r + intermed_y_sum_g + intermed_y_sum_b;
             
             -- Cb --
-            intermed_cb_sum_r <= x"0000" - (i_r&"0000")    - (i_r&"000")  - (i_r&"0");          -- - (r<<4) - (r<<3) - (r<<1)
-            intermed_cb_sum_g <= x"0000" - (i_g&"000000")  - (i_g&"0000") - (i_g&"000") + i_g;  -- - (g<<6) - (g<<4) - (g<<3) + g
-            intermed_cb_sum_b <= x"0000" + (i_b&"0000000") - (i_b&"0000");                      -- + (b<<7) - (b<<4)
+            intermed_cb_sum_r <= x"0000" - (i_r&"00000")   - (i_r&"00")  - (i_r&"0");  -- - (r<<5) - (r<<2) - (r<<1)
+            intermed_cb_sum_g <= x"0000" - (i_g&"000000")  - (i_g&"000") - (i_g&"0");  -- - (g<<6) - (g<<3) - (g<<1)
+            intermed_cb_sum_b <= x"0000" + (i_b&"0000000") - (i_b&"0000");             -- + (b<<7) - (b<<4)
             
             intermed_cb <= intermed_cb_sum_r + intermed_cb_sum_g + intermed_cb_sum_b;
             
             -- Cr --
-            intermed_cr_sum_r <= x"0000" + (i_r&"0000000") - (i_r&"0000");                            -- + (r<<7) - (r<<4)
-            intermed_cr_sum_g <= x"0000" - (i_g&"000000")  - (i_g&"00000") - (i_g&"00") - (i_g&"0");  -- - (g<<6) - (g<<5) - (g<<2) - (g<<1)
-            intermed_cr_sum_b <= x"0000" - (i_b&"000")     - (i_b&"0");                               -- - (b<<3) - (b<<1)
+            intermed_cr_sum_r <= x"0000" + (i_r&"0000000") - (i_r&"0000");               -- + (r<<7) - (r<<4)
+            intermed_cr_sum_g <= x"0000" - (i_g&"000000")  - (i_g&"00000") + (i_g&"0");  -- - (g<<6) - (g<<5) + (g<<1)
+            intermed_cr_sum_b <= x"0000" - (i_b&"0000")    - (i_b&"0");                  -- - (b<<4) - (b<<1)
             
             intermed_cr <= intermed_cr_sum_r + intermed_cr_sum_g + intermed_cr_sum_b;
             

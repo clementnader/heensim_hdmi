@@ -27,6 +27,7 @@ entity HEENS_top is
         GCLK             : in STD_LOGIC;  -- 100 MHz
         GCLK_P, GCLK_N   : in STD_LOGIC;  -- 200 MHz
         BTNL, BTNC, BTNR : in STD_LOGIC;
+        BTND             : in STD_LOGIC;
         
         LD         : out STD_LOGIC_VECTOR(3 downto 0);
         HDMI_CLK   : out STD_LOGIC;
@@ -50,6 +51,7 @@ architecture Behavioral of HEENS_top is
         port (
             i_clk                 : in STD_LOGIC;
             i_rst                 : in STD_LOGIC;
+            i_btn                 : in STD_LOGIC;
             i_spikes_hdmi_rd_fifo : in STD_LOGIC;
             i_analog_hdmi_rd_fifo : in STD_LOGIC;
             
@@ -133,7 +135,7 @@ architecture Behavioral of HEENS_top is
     signal analog_valid_input_fifo : STD_LOGIC;  -- valid signal from the analog FIFO
     signal analog_dout_input_fifo  : STD_LOGIC_VECTOR(15 downto 0);  -- output data from the analog FIFO
     signal analog_hdmi_rd_fifo     : STD_LOGIC;  -- flag to tell HEENS we are ready to read from the analog FIFO
-
+    
 begin
     
 --  ===================================================================================
@@ -159,6 +161,7 @@ begin
         port map (
             i_clk                 => heens_clk,
             i_rst                 => rst_pl,
+            i_btn                 => BTND,
             i_spikes_hdmi_rd_fifo => spikes_hdmi_rd_fifo,
             i_analog_hdmi_rd_fifo => analog_hdmi_rd_fifo,
             
