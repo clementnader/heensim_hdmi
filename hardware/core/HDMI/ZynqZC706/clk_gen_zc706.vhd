@@ -36,6 +36,7 @@ entity clk_gen is
     );
 end clk_gen;
 
+
 architecture Behavioral of clk_gen is
     
 --     signal unbuff_clk : STD_LOGIC;  -- result clock from the differential clocks - @200 MHz

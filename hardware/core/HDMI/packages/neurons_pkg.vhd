@@ -40,10 +40,8 @@ package neurons_pkg is
     constant C_MAX_ROW     : INTEGER := size_x_1;
     constant C_MAX_COLUMN  : INTEGER := size_y_1;
     
-    constant C_MAX_ID : INTEGER := C_MAX_COLUMN
-        + (C_MAX_COLUMN+1) * (C_MAX_ROW
-        + (C_MAX_ROW+1)    * (C_MAX_VIRT
-        + (C_MAX_VIRT+1)   * (C_MAX_CHIP_ID-1)));
+    constant C_MAX_ID : INTEGER := (C_MAX_COLUMN+1) 
+        * (C_MAX_ROW+1) * (C_MAX_VIRT+1) * (C_MAX_CHIP_ID) - 1;
     
     -----------------------------------------------------------------------------------
     

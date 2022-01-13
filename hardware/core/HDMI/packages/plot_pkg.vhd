@@ -33,9 +33,9 @@ package plot_pkg is
     constant C_BLACK   : STD_LOGIC_VECTOR(23 downto 0) := x"000000";
     constant C_GREY    : STD_LOGIC_VECTOR(23 downto 0) := x"222222";
     constant C_RED     : STD_LOGIC_VECTOR(23 downto 0) := x"CC0000";
-    constant C_ORANGE  : STD_LOGIC_VECTOR(23 downto 0) := x"CC8800";
+    constant C_ORANGE  : STD_LOGIC_VECTOR(23 downto 0) := x"AA5500";
     constant C_YELLOW  : STD_LOGIC_VECTOR(23 downto 0) := x"CCCC00";
-    constant C_GREEN   : STD_LOGIC_VECTOR(23 downto 0) := x"00AA00";
+    constant C_GREEN   : STD_LOGIC_VECTOR(23 downto 0) := x"008800";
     constant C_CYAN    : STD_LOGIC_VECTOR(23 downto 0) := x"00FFFF";
     constant C_BLUE    : STD_LOGIC_VECTOR(23 downto 0) := x"0000FF";
     constant C_MAGENTA : STD_LOGIC_VECTOR(23 downto 0) := x"FF00FF";

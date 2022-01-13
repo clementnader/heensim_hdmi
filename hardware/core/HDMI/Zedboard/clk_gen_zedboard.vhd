@@ -36,6 +36,7 @@ entity clk_gen is
     );
 end clk_gen;
 
+
 architecture Behavioral of clk_gen is
     
     signal clk_fb : STD_LOGIC;  -- feedback clock used by the PLL

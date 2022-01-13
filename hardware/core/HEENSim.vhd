@@ -48,6 +48,7 @@ entity HEENSim is
     );
 end HEENSim;
 
+
 architecture Behavioral of HEENSim is
     
     component stabilize_inputs

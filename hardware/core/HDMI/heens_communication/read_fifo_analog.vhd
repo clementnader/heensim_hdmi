@@ -47,6 +47,7 @@ entity read_fifo_analog is
     );
 end read_fifo_analog;
 
+
 architecture Behavioral of read_fifo_analog is
     
     component blk_mem_gen_3
@@ -66,40 +67,43 @@ architecture Behavioral of read_fifo_analog is
     -- Convert a signed on 16 bits from -8,000 to -3,000
     --     to a value between 0 and 180 in a std_logic_vector on 8 bits
     
-    function divide_value (
+    function transform_analog_value (
             analog_value : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0)
-        ) return STD_LOGIC_VECTOR is
+        ) return SIGNED is
             
-            variable sum_value : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
+            variable sum_value        : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
+            variable multiplied_value : SIGNED(C_ANALOG_VALUE_SIZE+C_ANALOG_DIV_PRECISION_BITS-1 downto 0);
             
         begin
             
             -- redress the value to a positive one
             sum_value := analog_value + C_ANALOG_TRANSFORM_ADDER;  -- + 8000
             
-            -- saturate between 0 and 5000
-            if sum_value < 0 then
-                sum_value := to_signed(0, C_ANALOG_VALUE_SIZE);
-            elsif sum_value > C_ANALOG_MAX_VALUE - C_ANALOG_MIN_VALUE then
-                sum_value := to_signed(C_ANALOG_MAX_VALUE - C_ANALOG_MIN_VALUE, C_ANALOG_VALUE_SIZE);
-            end if;
+            multiplied_value := sum_value * C_ANALOG_DIV_MULTIPLIER;
             
-            return std_logic_vector(sum_value);
+            return multiplied_value(multiplied_value'high downto C_ANALOG_DIV_PRECISION_BITS);
             
     end function;
     
-    function transform_analog_value (
-            sum_value : STD_LOGIC_VECTOR(C_ANALOG_VALUE_SIZE-1 downto 0)
+    function saturate_analog_value (
+            div_value : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0)
         ) return STD_LOGIC_VECTOR is
             
-            variable multiplied_value : STD_LOGIC_VECTOR(C_ANALOG_VALUE_SIZE+C_ANALOG_DIV_PRECISION_BITS-1 downto 0);
+            variable res_value : STD_LOGIC_VECTOR(C_ANALOG_VALUE_SIZE-1 downto 0);
             
         begin
             
-            multiplied_value := std_logic_vector(unsigned(sum_value) * C_ANALOG_DIV_MULTIPLIER);
---            multiplied_value := (multiplied_value'range => '0') + sum_value&"00000000000" + sum_value&"00000000" + sum_value&"000000" - sum_value&"000";  -- + (sum_value<<11) + (sum_value<<8) + (sum_value<<6) - (sum_value<<3)
+            -- saturate between C_TARGET_MIN and C_TARGET_MAX-1
+            if div_value < C_TARGET_MIN then
+                res_value := std_logic_vector(to_unsigned(C_TARGET_MIN, C_ANALOG_VALUE_SIZE));
+            elsif div_value > C_TARGET_MAX-1 then
+                res_value := std_logic_vector(to_unsigned(C_TARGET_MAX-1, C_ANALOG_VALUE_SIZE));
+            else
+                res_value := std_logic_vector(div_value);
+            end if;
             
-            return multiplied_value(C_ANALOG_DIV_PRECISION_BITS+C_ANALOG_PLOT_VALUE_SIZE-1 downto C_ANALOG_DIV_PRECISION_BITS);
+            return res_value(C_ANALOG_PLOT_VALUE_SIZE-1 downto 0);
+            
             
     end function;
     
@@ -121,7 +125,7 @@ architecture Behavioral of read_fifo_analog is
     -----------------------------------------------------------------------------------
     
     signal analog_value      : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
-    signal sum_value         : STD_LOGIC_VECTOR(C_ANALOG_VALUE_SIZE-1 downto 0);
+    signal div_value         : SIGNED(C_ANALOG_VALUE_SIZE-1 downto 0);
     signal analog_plot_value : STD_LOGIC_VECTOR(C_ANALOG_PLOT_VALUE_SIZE-1 downto 0);
     signal analog_mem_prev   : STD_LOGIC_VECTOR(C_ANALOG_PLOT_VALUE_SIZE*(C_NB_NEURONS_ANALOG-1)-1 downto 0);
     
@@ -269,10 +273,10 @@ begin
                 analog_value <= signed(i_fifo_dout);
             
             elsif fifo_rd_state = ANALOG_VALUE_DIV then
-                sum_value <= divide_value(analog_value);
+                div_value <= transform_analog_value(analog_value);
                 
             elsif fifo_rd_state = ANALOG_VALUE_CALC then
-                analog_plot_value <= transform_analog_value(sum_value);
+                analog_plot_value <= saturate_analog_value(div_value);
             
             elsif fifo_rd_state = MEM_WRITE and neuron_cnt < C_NB_NEURONS_ANALOG-1 then
                 analog_mem_prev(C_ANALOG_PLOT_VALUE_SIZE*(neuron_cnt+1)-1 downto C_ANALOG_PLOT_VALUE_SIZE*neuron_cnt) <= analog_plot_value;

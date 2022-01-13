@@ -142,7 +142,6 @@ architecture Behavioral of config_hdmi_chip_i2c_zedboard is
     
     type T_CONFIG_HDMI_STATE is (
         INIT,
-        HDMI_CONFIG_WAIT_READY,
         HDMI_CONFIG_STARTING,
         HDMI_CONFIG_WAIT,
         HDMI_CONFIGURATION,
@@ -208,14 +207,11 @@ begin
                     
                     -- INIT --
                     when INIT =>
-                        config_hdmi_state <= HDMI_CONFIG_WAIT_READY;
-                    
-                    -- HDMI CONFIGURATION --
-                    when HDMI_CONFIG_WAIT_READY =>
                         if i2c_ready = '1' then
                             config_hdmi_state <= HDMI_CONFIG_STARTING;
                         end if;
                     
+                    -- HDMI CONFIGURATION --
                     when HDMI_CONFIG_STARTING =>
                         config_hdmi_state <= HDMI_CONFIG_WAIT;
                     

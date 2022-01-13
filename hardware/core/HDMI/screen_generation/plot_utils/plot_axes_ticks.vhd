@@ -32,14 +32,15 @@ entity plot_axes_ticks is
         G_V_UP_LIMIT  : STD_LOGIC_VECTOR(11 downto 0);
         G_V_LOW_LIMIT : STD_LOGIC_VECTOR(11 downto 0);
         
-        G_RANGE_VCNT1 : INTEGER := 10;  -- vertical tick every 10
-        G_RANGE_VCNT2 : INTEGER := 5;   -- vertical tick every 50
-        G_RANGE_VCNT3 : INTEGER := 2    -- vertical tick every 100
+        G_RANGE_VCNT1 : INTEGER;
+        G_RANGE_VCNT2 : INTEGER;
+        G_RANGE_VCNT3 : INTEGER
     );
     port (
-        i_clk      : in STD_LOGIC;
-        i_hcounter : in STD_LOGIC_VECTOR(11 downto 0);
-        i_vcounter : in STD_LOGIC_VECTOR(11 downto 0);
+        i_clk        : in STD_LOGIC;
+        i_hcounter   : in STD_LOGIC_VECTOR(11 downto 0);
+        i_vcounter   : in STD_LOGIC_VECTOR(11 downto 0);
+        i_in_between : in BOOLEAN;
         
         o_hcnt1 : out INTEGER range 0 to C_RANGE_HCNT1-1;
         o_hcnt2 : out INTEGER range 0 to C_RANGE_HCNT2-1;
@@ -53,8 +54,8 @@ end plot_axes_ticks;
 
 architecture Behavioral of plot_axes_ticks is
     
-    constant C_VCNT1_UP_LIMIT : INTEGER := G_NB_V_POINTS mod G_RANGE_VCNT1;
-    constant C_VCNT_Q1        : INTEGER := (G_NB_V_POINTS-C_VCNT1_UP_LIMIT) / G_RANGE_VCNT1;
+    constant C_VCNT1_UP_LIMIT : INTEGER := (G_NB_V_POINTS-1) mod G_RANGE_VCNT1;
+    constant C_VCNT_Q1        : INTEGER := (G_NB_V_POINTS-1-C_VCNT1_UP_LIMIT) / G_RANGE_VCNT1;
     constant C_VCNT2_UP_LIMIT : INTEGER := C_VCNT_Q1 mod G_RANGE_VCNT2;
     constant C_VCNT_Q2        : INTEGER := (C_VCNT_Q1-C_VCNT2_UP_LIMIT) / G_RANGE_VCNT2;
     constant C_VCNT3_UP_LIMIT : INTEGER := C_VCNT_Q2 mod G_RANGE_VCNT3;
@@ -124,11 +125,11 @@ begin
             
             last_vcounter <= i_vcounter;
             
-            if i_vcounter = G_V_UP_LIMIT then
+            if i_vcounter = G_V_UP_LIMIT+1 or i_in_between then
                 vcnt1 <= C_VCNT1_UP_LIMIT;
                 vcnt2 <= C_VCNT2_UP_LIMIT;
                 vcnt3 <= C_VCNT3_UP_LIMIT;
-            elsif i_vcounter <= G_V_LOW_LIMIT and i_vcounter > G_V_UP_LIMIT
+            elsif i_vcounter <= G_V_LOW_LIMIT and i_vcounter > G_V_UP_LIMIT+1
              and last_vcounter /= i_vcounter then
                 if vcnt1 > 0 then
                     vcnt1 <= vcnt1 - 1;

@@ -194,42 +194,50 @@ begin
                     cnt_ms <= cnt_ms + 1;
                 else
                     cnt_ms <= 0;
-                    if cnt_s(1) /= 5 or cnt_s(0) /= 9 then
+                    if not (cnt_s(1) = 5 and cnt_s(0) = 9) then
                         if cnt_s(0) < 9 then
                             cnt_s(0) <= cnt_s(0) + 1;
                         elsif cnt_s(1) = -1 then
+                            cnt_s(0) <= 0;
                             cnt_s(1) <= 1;
                         else
+                            cnt_s(0) <= 0;
                             cnt_s(1) <= cnt_s(1) + 1;
                         end if;
                     else
                         cnt_s <= (1 => -1, 0 => 0);
-                        if cnt_mn(1) /= 5 or cnt_mn(0) /= 9 then
+                        if not (cnt_mn(1) = 5 and cnt_mn(0) = 9) then
                             if cnt_mn(0) < 9 then
                                 cnt_mn(0) <= cnt_mn(0) + 1;
                             elsif cnt_mn(1) = -1 then
+                                cnt_mn(0) <= 0;
                                 cnt_mn(1) <= 1;
                             else
+                                cnt_mn(0) <= 0;
                                 cnt_mn(1) <= cnt_mn(1) + 1;
                             end if;
                         else
                             cnt_mn <= (1 => -1, 0 => 0);
-                            if cnt_hr(1) /= 2 or cnt_hr(0) /= 3 then
+                            if not (cnt_hr(1) = 2 and cnt_hr(0) = 3) then
                                 if cnt_hr(0) < 9 then
                                     cnt_hr(0) <= cnt_hr(0) + 1;
                                 elsif cnt_hr(1) = -1 then
+                                    cnt_hr(0) <= 0;
                                     cnt_hr(1) <= 1;
                                 else
+                                    cnt_hr(0) <= 0;
                                     cnt_hr(1) <= cnt_hr(1) + 1;
                                 end if;
                             else
                                 cnt_hr <= (1 => -1, 0 => 0);
-                                if cnt_day(1) /= 6 or cnt_day(0) /= 3 then
+                                if not (cnt_day(1) = 6 and cnt_day(0) = 3) then
                                     if cnt_day(0) < 9 then
                                         cnt_day(0) <= cnt_day(0) + 1;
                                     elsif cnt_day(1) = -1 then
+                                        cnt_day(0) <= 0;
                                         cnt_day(1) <= 1;
                                     else
+                                        cnt_day(0) <= 0;
                                         cnt_day(1) <= cnt_day(1) + 1;
                                     end if;
                                 else
@@ -250,25 +258,25 @@ begin
     begin
         if rising_edge(i_clk) then
             
-            if cnt_day = (1 => -1, 0 => 0) then
+            if (cnt_day(1) = -1 and cnt_day(0) = 0) then
                 h_time_hr_i <= 0;
             else
                 h_time_hr_i <= 1;
             end if;
             
-            if cnt_day = (1 => -1, 0 => 0) and cnt_hr = (1 => -1, 0 => 0) then
+            if (cnt_day(1) = -1 and cnt_day(0) = 0) and (cnt_hr(1) = -1 and cnt_hr(0) = 0) then
                 h_time_mn_i <= 0;
-            elsif cnt_day = (1 => -1, 0 => 0) and cnt_hr /= (1 => -1, 0 => 0) then
+            elsif (cnt_day(1) = -1 and cnt_day(0) = 0) and not (cnt_hr(1) = -1 and cnt_hr(0) = 0) then
                 h_time_mn_i <= 1;
             else
                 h_time_mn_i <= 2;
             end if;
             
-            if cnt_day = (1 => -1, 0 => 0) and cnt_hr = (1 => -1, 0 => 0) and cnt_mn = (1 => -1, 0 => 0) then
+            if (cnt_day(1) = -1 and cnt_day(0) = 0) and (cnt_hr(1) = -1 and cnt_hr(0) = 0) and (cnt_mn(1) = -1 and cnt_mn(0) = 0) then
                 h_time_s_i <= 0;
-            elsif cnt_day = (1 => -1, 0 => 0) and cnt_hr = (1 => -1, 0 => 0) and cnt_mn /= (1 => -1, 0 => 0) then
+            elsif (cnt_day(1) = -1 and cnt_day(0) = 0) and (cnt_hr(1) = -1 and cnt_hr(0) = 0) and not (cnt_mn(1) = -1 and cnt_mn(0) = 0) then
                 h_time_s_i <= 1;
-            elsif cnt_day = (1 => -1, 0 => 0) and cnt_hr /= (1 => -1, 0 => 0) then
+            elsif (cnt_day(1) = -1 and cnt_day(0) = 0) and not (cnt_hr(1) = -1 and cnt_hr(0) = 0) then
                 h_time_s_i <= 2;
             else
                 h_time_s_i <= 3;
@@ -290,9 +298,9 @@ begin
     
     ------------------------------------------
     
-    time_mn_bool  <= not (cnt_mn = (1 => -1, 0 => 0) and h_time_mn_i = 0);
-    time_hr_bool  <= not (cnt_hr = (1 => -1, 0 => 0) and h_time_hr_i = 0);
-    time_day_bool <= not (cnt_day = (1 => -1, 0 => 0));
+    time_mn_bool  <= not ((cnt_mn(1) = -1 and cnt_mn(0) = 0) and h_time_mn_i = 0);
+    time_hr_bool  <= not ((cnt_hr(1) = -1 and cnt_hr(0) = 0) and h_time_hr_i = 0);
+    time_day_bool <= not ((cnt_day(1) = -1 and cnt_day(0) = 0));
     
     -----------------------------------------------------------------------------------
     

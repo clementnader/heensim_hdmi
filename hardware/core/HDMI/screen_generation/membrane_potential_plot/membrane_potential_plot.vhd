@@ -90,23 +90,23 @@ architecture Behavioral of membrane_potential_plot is
     
     -----------------------------------------------------------------------------------
     
-    constant C_V_NB_POINTS : INTEGER := (C_TARGET_MAX+1) * C_NB_NEURONS_ANALOG + 2 * (C_NB_NEURONS_ANALOG-1);  -- 730
+    constant C_V_NB_POINTS : INTEGER := C_TARGET_MAX * C_NB_NEURONS_ANALOG + 2 * (C_NB_NEURONS_ANALOG-1);  -- 720 + 6 = 726
     
     constant C_V_LOW_LIMIT_ALL : STD_LOGIC_VECTOR(11 downto 0) := C_V_VISIBLE - C_OFFSET;
     constant C_V_UP_LIMIT_ALL  : STD_LOGIC_VECTOR(11 downto 0) := C_V_LOW_LIMIT_ALL - C_V_NB_POINTS;
-    constant C_V_LOW_LIMIT_1   : STD_LOGIC_VECTOR(11 downto 0) := C_V_UP_LIMIT_ALL + (C_TARGET_MAX+1);
+    constant C_V_LOW_LIMIT_1   : STD_LOGIC_VECTOR(11 downto 0) := C_V_UP_LIMIT_ALL + C_TARGET_MAX;
     
     -----------------------------------------------------------------------------------
     
-    constant C_RANGE_VCNT1 : INTEGER := C_TARGET_MAX/2;   -- vertical tick every 25 mV
-    constant C_RANGE_VCNT2 : INTEGER := C_RANGE_VCNT1/5;  -- vertical tick every  5 mV
-    constant C_RANGE_VCNT3 : INTEGER := C_RANGE_VCNT2/1;  -- vertical tick every  5 mV
+    constant C_RANGE_VCNT1 : INTEGER := C_TARGET_MAX/10;  -- vertical tick every  5 mV
+    constant C_RANGE_VCNT2 : INTEGER := 5;                -- vertical tick every 25 mV
+    constant C_RANGE_VCNT3 : INTEGER := 1;                -- vertical tick every 25 mV
     
     -----------------------------------------------------------------------------------
     
     -- Signal that converts the vertical position to the correspondant analog plot value
     signal plot_cnt         : INTEGER range 0 to C_NB_NEURONS_ANALOG-1;
-    signal shifted_vcounter : INTEGER range 0 to C_TARGET_MAX;
+    signal shifted_vcounter : INTEGER range 0 to C_TARGET_MAX-1;
     signal space_between    : INTEGER range 0 to 2;
     signal in_vplot         : BOOLEAN;
     signal in_between       : BOOLEAN;
@@ -126,7 +126,7 @@ begin
     
     plot_contours_inst : plot_contours
         generic map (
-            G_NB_V_POINTS => C_V_NB_POINTS,
+            G_NB_V_POINTS => C_TARGET_MAX,
             G_V_UP_LIMIT  => C_V_UP_LIMIT_ALL,
             G_V_LOW_LIMIT => C_V_LOW_LIMIT_ALL,
             
@@ -174,14 +174,15 @@ begin
                 if i_vcounter = C_V_UP_LIMIT_ALL+1 then
                     
                     plot_cnt         <= 0;
-                    shifted_vcounter <= C_TARGET_MAX;
+                    shifted_vcounter <= C_TARGET_MAX-1;
                     space_between    <= 0;
                     
                 elsif i_vcounter <= C_V_LOW_LIMIT_ALL and i_vcounter > C_V_UP_LIMIT_ALL+1 then
                     
                     if shifted_vcounter = 0 then
-                        shifted_vcounter <= C_TARGET_MAX;
+                        shifted_vcounter <= C_TARGET_MAX-1;
                         space_between    <= 2;
+                        plot_cnt         <= plot_cnt + 1;
                     elsif space_between > 0 then
                         space_between <= space_between-1;
                     else
@@ -240,42 +241,38 @@ begin
     
     color_proc : process(i_clk)
         
-        variable analog_value_before_i  : STD_LOGIC_VECTOR(C_ANALOG_PLOT_VALUE_SIZE-1 downto 0);
-        variable analog_value_current_i : STD_LOGIC_VECTOR(C_ANALOG_PLOT_VALUE_SIZE-1 downto 0);
+        variable analog_value_before  : STD_LOGIC_VECTOR(C_ANALOG_PLOT_VALUE_SIZE-1 downto 0);
+        variable analog_value_current : STD_LOGIC_VECTOR(C_ANALOG_PLOT_VALUE_SIZE-1 downto 0);
         
     begin
         if rising_edge(i_clk) then
             
             -- Inside the plot
-            for i in 0 to C_NB_NEURONS_ANALOG-1 loop
+            o_dot_pixel <= (others => False);
+            
+            if in_vplot and i_hcounter >= C_H_LOW_LIMIT and i_hcounter < C_H_UP_LIMIT then
                 
-                o_dot_pixel(i) <= False;
-                
-                if in_vplot and plot_cnt = i
-                 and i_hcounter >= C_H_LOW_LIMIT and i_hcounter < C_H_UP_LIMIT then
+                -- Plot the analog value
+                if i_current_timestamp(31 downto 10) /= 0 or i_current_timestamp >= i_hcounter-C_H_LOW_LIMIT then
                     
-                    -- Plot the analog value
-                    if i_current_timestamp(31 downto 10) /= 0 or i_current_timestamp >= i_hcounter-C_H_LOW_LIMIT then
-                        
-                        analog_value_before_i  := mem_column_before(C_ANALOG_PLOT_VALUE_SIZE*(i+1)-1 downto C_ANALOG_PLOT_VALUE_SIZE*i);
-                        analog_value_current_i := mem_column_current(C_ANALOG_PLOT_VALUE_SIZE*(i+1)-1 downto C_ANALOG_PLOT_VALUE_SIZE*i);
-                        
-                        if analog_value_current_i < analog_value_before_i then
-                            if analog_value_current_i <= shifted_vcounter
-                             and analog_value_before_i >= shifted_vcounter then
-                                o_dot_pixel(i) <= True;
-                            end if;
-                        else
-                            if analog_value_current_i >= shifted_vcounter
-                             and analog_value_before_i <= shifted_vcounter then
-                                o_dot_pixel(i) <= True;
-                            end if;
+                    analog_value_before  := mem_column_before(C_ANALOG_PLOT_VALUE_SIZE*(plot_cnt+1)-1 downto C_ANALOG_PLOT_VALUE_SIZE*plot_cnt);
+                    analog_value_current := mem_column_current(C_ANALOG_PLOT_VALUE_SIZE*(plot_cnt+1)-1 downto C_ANALOG_PLOT_VALUE_SIZE*plot_cnt);
+                    
+                    if analog_value_current < analog_value_before then
+                        if analog_value_current <= shifted_vcounter
+                         and analog_value_before >= shifted_vcounter then
+                            o_dot_pixel(plot_cnt) <= True;
                         end if;
-                        
+                    else
+                        if analog_value_current >= shifted_vcounter
+                         and analog_value_before <= shifted_vcounter then
+                            o_dot_pixel(plot_cnt) <= True;
+                        end if;
                     end if;
                     
                 end if;
-            end loop;
+                
+            end if;
             
         end if;
     end process;

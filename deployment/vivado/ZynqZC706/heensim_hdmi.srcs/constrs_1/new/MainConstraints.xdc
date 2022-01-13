@@ -69,8 +69,8 @@ set_property -dict {PACKAGE_PIN A17  IOSTANDARD LVCMOS18} [get_ports LD[3]];  # 
 # ----------------------------------------------------------------------------
 # Set errors from missing pins to warnings only
 # ----------------------------------------------------------------------------
-set_property SEVERITY {Warning} [get_drc_checks NSTD-1]
-set_property SEVERITY {Warning} [get_drc_checks UCIO-1]
+set_property SEVERITY {Warning} [get_drc_checks NSTD-1];
+set_property SEVERITY {Warning} [get_drc_checks UCIO-1];
 
 # ----------------------------------------------------------------------------
 # MULTIBOARD - Aurora

@@ -70,7 +70,7 @@ begin
     char_pos_in_text <= to_integer(unsigned(shifted_hpos(shifted_hpos'high downto C_FONT_WIDTH_POW)));
     col_pos_in_char  <= to_integer(unsigned(shifted_hpos(C_FONT_WIDTH_POW-1 downto 0)-1));  -- the minus one is because we need one clock period to process the data but hcounter increments continuously
     
-    char_code <= C_ZERO_CHAR + i_display_int(G_NB_DIGITS-1 - char_pos_in_text) when i_do_display and i_display_int(char_pos_in_text) /= -1
+    char_code <= C_ZERO_CHAR + i_display_int(G_NB_DIGITS-1 - char_pos_in_text) when i_do_display and i_display_int(G_NB_DIGITS-1 - char_pos_in_text) /= -1
             else C_SPACE_CHAR;
     
     row_addr_in_table <= char_code & shifted_vpos(3 downto 0);

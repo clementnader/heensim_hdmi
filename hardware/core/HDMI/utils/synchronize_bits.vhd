@@ -38,6 +38,7 @@ entity synchronize_bits is
     );
 end synchronize_bits;
 
+
 architecture Behavioral of synchronize_bits is
     
 begin

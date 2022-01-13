@@ -36,8 +36,8 @@ end config_hdmi_chip_i2c_zc706;
 
 architecture Behavioral of config_hdmi_chip_i2c_zc706 is
     
-    constant C_MUX_I2C_ADDR  : STD_LOGIC_VECTOR(6 downto 0) := b"1110_100";
-    constant C_MUX_SELECTION : STD_LOGIC_VECTOR(7 downto 0) := b"0000_0010";  -- to enable ADV7511 as slave
+    constant C_BUS_SW_I2C_ADDR  : STD_LOGIC_VECTOR(6 downto 0) := b"1110_100";
+    constant C_BUS_SW_SELECTION : STD_LOGIC_VECTOR(7 downto 0) := b"0000_0010";  -- to enable ADV7511 as slave
     
     constant C_HDMI_I2C_ADDR : STD_LOGIC_VECTOR(6 downto 0) := b"0111_001";
     
@@ -145,11 +145,9 @@ architecture Behavioral of config_hdmi_chip_i2c_zc706 is
     
     type T_CONFIG_HDMI_STATE is (
         INIT,
-        MUX_CONFIG_WAIT_READY,
-        MUX_CONFIG_STARTING,
-        MUX_CONFIG_WAIT,
-        MUX_CONFIGURATION,
-        HDMI_CONFIG_WAIT_READY,
+        BUS_SW_CONFIG_STARTING,
+        BUS_SW_CONFIG_WAIT,
+        BUS_SW_CONFIGURATION,
         HDMI_CONFIG_STARTING,
         HDMI_CONFIG_WAIT,
         HDMI_CONFIGURATION,
@@ -215,33 +213,25 @@ begin
                     
                     -- INIT --
                     when INIT =>
-                        config_hdmi_state <= MUX_CONFIG_WAIT_READY;
+                        if i2c_ready = '1' then
+                            config_hdmi_state <= BUS_SW_CONFIG_STARTING;
+                        end if;
                     
                     -- MUX CONFIGURATION --
-                    when MUX_CONFIG_WAIT_READY =>
-                        if i2c_ready = '1' then
-                            config_hdmi_state <= MUX_CONFIG_STARTING;
-                        end if;
+                    when BUS_SW_CONFIG_STARTING =>
+                        config_hdmi_state <= BUS_SW_CONFIG_WAIT;
                     
-                    when MUX_CONFIG_STARTING =>
-                        config_hdmi_state <= MUX_CONFIG_WAIT;
-                    
-                    when MUX_CONFIG_WAIT =>
+                    when BUS_SW_CONFIG_WAIT =>
                         if i2c_ready = '0' then
-                            config_hdmi_state <= MUX_CONFIGURATION;
+                            config_hdmi_state <= BUS_SW_CONFIGURATION;
                         end if;
                     
-                    when MUX_CONFIGURATION =>
-                        if i2c_ready = '1' then
-                            config_hdmi_state <= HDMI_CONFIG_WAIT_READY;
-                        end if;
-                    
-                    -- HDMI CONFIGURATION --
-                    when HDMI_CONFIG_WAIT_READY =>
+                    when BUS_SW_CONFIGURATION =>
                         if i2c_ready = '1' then
                             config_hdmi_state <= HDMI_CONFIG_STARTING;
                         end if;
                     
+                    -- HDMI CONFIGURATION --
                     when HDMI_CONFIG_STARTING =>
                         config_hdmi_state <= HDMI_CONFIGURATION;
                     
@@ -283,13 +273,13 @@ begin
     
     -----------------------------------------------------------------------------------
     
-    i2c_addr  <= C_MUX_I2C_ADDR  when config_hdmi_state = MUX_CONFIG_STARTING
+    i2c_addr  <= C_BUS_SW_I2C_ADDR  when config_hdmi_state = BUS_SW_CONFIG_STARTING
             else C_HDMI_I2C_ADDR when config_hdmi_state = HDMI_CONFIG_STARTING;
     
-    i2c_data  <= C_MUX_SELECTION&C_MUX_SELECTION when config_hdmi_state = MUX_CONFIG_STARTING
+    i2c_data  <= C_BUS_SW_SELECTION&C_BUS_SW_SELECTION when config_hdmi_state = BUS_SW_CONFIG_STARTING
             else config_reg_value                when config_hdmi_state = HDMI_CONFIG_STARTING;
     
-    i2c_start <= '1' when config_hdmi_state = MUX_CONFIG_STARTING
+    i2c_start <= '1' when config_hdmi_state = BUS_SW_CONFIG_STARTING
             else '1' when config_hdmi_state = HDMI_CONFIG_STARTING
             else '0';
     

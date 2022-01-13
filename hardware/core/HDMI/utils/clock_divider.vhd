@@ -34,6 +34,7 @@ entity clock_divider is
     );
 end clock_divider;
 
+
 architecture Behavioral of clock_divider is
     
     signal div_cnt : STD_LOGIC_VECTOR(G_NB_BITS_CLK_DIV-1 downto 0) := (others => '0');

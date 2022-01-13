@@ -128,7 +128,7 @@ architecture Behavioral of write_axes_and_ticks_label is
     
     -- Horizontal axis label
     constant C_H_LABEL_HPOS : STD_LOGIC_VECTOR(11 downto 0) := C_H_MIDDLE_PLOT - C_FONT_WIDTH/2*(C_H_LABEL'length) - 6;
-    constant C_H_LABEL_VPOS : STD_LOGIC_VECTOR(11 downto 0) := C_H_TICK_VPOS + C_FONT_HEIGHT + 8;
+    constant C_H_LABEL_VPOS : STD_LOGIC_VECTOR(11 downto 0) := C_H_TICK_VPOS + C_FONT_HEIGHT + 4;
     
     signal h_label_pixel : BOOLEAN;
     

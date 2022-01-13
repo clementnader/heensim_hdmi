@@ -132,7 +132,7 @@ begin
         port map (
             i_clk        => i_clk,
             i_hcounter   => i_hcounter,
-            i_vcounter   => i_vcounter,
+            i_vcounter   => vcounter_ext,
             i_plot_ext   => plot_ext,
             i_in_between => False,
             

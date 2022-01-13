@@ -61,9 +61,10 @@ architecture Behavioral of plot_contours is
             G_RANGE_VCNT3 : INTEGER
         );
         port (
-            i_clk      : in STD_LOGIC;
-            i_hcounter : in STD_LOGIC_VECTOR(11 downto 0);
-            i_vcounter : in STD_LOGIC_VECTOR(11 downto 0);
+            i_clk        : in STD_LOGIC;
+            i_hcounter   : in STD_LOGIC_VECTOR(11 downto 0);
+            i_vcounter   : in STD_LOGIC_VECTOR(11 downto 0);
+            i_in_between : in BOOLEAN;
             
             o_hcnt1 : out INTEGER range 0 to C_RANGE_HCNT1-1;
             o_hcnt2 : out INTEGER range 0 to C_RANGE_HCNT2-1;
@@ -99,9 +100,10 @@ begin
             G_RANGE_VCNT3 => G_RANGE_VCNT3
         )
         port map (
-            i_clk      => i_clk,
-            i_hcounter => i_hcounter,
-            i_vcounter => i_vcounter,
+            i_clk        => i_clk,
+            i_hcounter   => i_hcounter,
+            i_vcounter   => i_vcounter,
+            i_in_between => i_in_between,
             
             o_hcnt1 => hcnt1,
             o_hcnt2 => hcnt2,
