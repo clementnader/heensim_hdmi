@@ -11,6 +11,23 @@ set_property -dict {PACKAGE_PIN Y9   IOSTANDARD LVCMOS33} [get_ports GCLK];  # G
 create_clock -period 10.000 -name GCLK [get_ports GCLK];  # GCLK @100 MHz
 
 # ----------------------------------------------------------------------------
+# User Push Buttons
+# ----------------------------------------------------------------------------
+set_property -dict {PACKAGE_PIN N15  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNL];  # BTNL
+set_property -dict {PACKAGE_PIN P16  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNC];  # BTNC
+#set_property -dict {PACKAGE_PIN R18  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNR];  # BTNR
+set_property -dict {PACKAGE_PIN R16  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTND];  # "BTND"
+#set_property -dict {PACKAGE_PIN T18  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNU];  # "BTNU"
+
+# ----------------------------------------------------------------------------
+# User LEDs
+# ----------------------------------------------------------------------------
+set_property -dict {PACKAGE_PIN T22  IOSTANDARD LVCMOS33} [get_ports LD[0]];  # LD0
+set_property -dict {PACKAGE_PIN T21  IOSTANDARD LVCMOS33} [get_ports LD[1]];  # LD1
+set_property -dict {PACKAGE_PIN U22  IOSTANDARD LVCMOS33} [get_ports LD[2]];  # LD2
+set_property -dict {PACKAGE_PIN U21  IOSTANDARD LVCMOS33} [get_ports LD[3]];  # LD3
+
+# ----------------------------------------------------------------------------
 # HDMI Output
 # ----------------------------------------------------------------------------
 set_property -dict {PACKAGE_PIN W18  IOSTANDARD LVCMOS33} [get_ports HDMI_CLK];    # HD-CLK
@@ -40,23 +57,6 @@ set_property -dict {PACKAGE_PIN W17  IOSTANDARD LVCMOS33} [get_ports HDMI_VSYNC]
 
 set_property -dict {PACKAGE_PIN AA18 IOSTANDARD LVCMOS33 PULLTYPE PULLUP} [get_ports HDMI_SCL];  # HD-SCL
 set_property -dict {PACKAGE_PIN Y16  IOSTANDARD LVCMOS33 PULLTYPE PULLUP} [get_ports HDMI_SDA];  # HD-SDA
-
-# ----------------------------------------------------------------------------
-# User Push Buttons
-# ----------------------------------------------------------------------------
-set_property -dict {PACKAGE_PIN N15  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNL];  # BTNL
-set_property -dict {PACKAGE_PIN P16  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNC];  # BTNC
-#set_property -dict {PACKAGE_PIN R18  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNR];  # BTNR
-set_property -dict {PACKAGE_PIN R16  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTND];  # "BTND"
-#set_property -dict {PACKAGE_PIN T18  IOSTANDARD LVCMOS25 PULLTYPE PULLDOWN} [get_ports BTNU];  # "BTNU"
-
-# ----------------------------------------------------------------------------
-# User LEDs
-# ----------------------------------------------------------------------------
-set_property -dict {PACKAGE_PIN T22  IOSTANDARD LVCMOS33} [get_ports LD[0]];  # LD0
-set_property -dict {PACKAGE_PIN T21  IOSTANDARD LVCMOS33} [get_ports LD[1]];  # LD1
-set_property -dict {PACKAGE_PIN U22  IOSTANDARD LVCMOS33} [get_ports LD[2]];  # LD2
-set_property -dict {PACKAGE_PIN U21  IOSTANDARD LVCMOS33} [get_ports LD[3]];  # LD3
 
 # ----------------------------------------------------------------------------
 # Set errors from missing pins to warnings only

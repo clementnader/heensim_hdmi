@@ -223,7 +223,7 @@ begin
                     
                     -- HDMI CONFIGURATION --
                     when HDMI_CONFIG_STARTING =>
-                        config_hdmi_state <= HDMI_CONFIGURATION;
+                        config_hdmi_state <= HDMI_CONFIG_WAIT;
                     
                     when HDMI_CONFIG_WAIT =>
                         if i2c_ready = '0' then

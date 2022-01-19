@@ -81,12 +81,7 @@ architecture Behavioral of config_hdmi_chip_i2c_zedboard is
         --     B1                  B2                  B3                  B4
         x"201D", x"21DC",   x"2204", x"23AD",   x"241F", x"2524",   x"2601", x"2735",
         --     C1                  C2                  C3                  C4
-        x"2800", x"2900",   x"2A04", x"2BAD",   x"2C08", x"2D7C",   x"2E1B", x"2F77",
-        
-        ------------------------
-        -- End of configuration
-        ------------------------
-        x"FFFF"
+        x"2800", x"2900",   x"2A04", x"2BAD",   x"2C08", x"2D7C",   x"2E1B", x"2F77"
     );
     
     -----------------------------------------------------------------------------------
@@ -136,7 +131,6 @@ architecture Behavioral of config_hdmi_chip_i2c_zedboard is
     
     signal config_address   : INTEGER range 0 to C_CONFIG_REG_VALUE_PAIRS'high := 0;
     signal config_reg_value : STD_LOGIC_VECTOR(15 downto 0);
-    signal config_finished  : STD_LOGIC;
     
     -----------------------------------------------------------------------------------
     
@@ -192,10 +186,6 @@ begin
     
     -----------------------------------------------------------------------------------
     
-    config_finished <= '1' when config_reg_value = x"FFFF" else '0';
-    
-    -----------------------------------------------------------------------------------
-    
     state_machine_proc : process(div_clk)
     begin
         if rising_edge(div_clk) then
@@ -221,10 +211,12 @@ begin
                         end if;
                     
                     when HDMI_CONFIGURATION =>
-                        if config_finished = '1' then
-                            config_hdmi_state <= FINISHED;
-                        elsif i2c_ready = '1' then
-                            config_hdmi_state <= HDMI_CONFIG_STARTING;
+                        if i2c_ready = '1' then
+                            if config_address = C_CONFIG_REG_VALUE_PAIRS'high then
+                                config_hdmi_state <= FINISHED;
+                            else
+                                config_hdmi_state <= HDMI_CONFIG_STARTING;
+                            end if;
                         end if;
                     
                     -- FINISHED --
@@ -253,9 +245,11 @@ begin
     
     -----------------------------------------------------------------------------------
     
-    i2c_addr  <= C_HDMI_I2C_ADDR when config_hdmi_state = HDMI_CONFIG_STARTING;
+    i2c_addr  <= C_HDMI_I2C_ADDR when config_hdmi_state = HDMI_CONFIG_WAIT or config_hdmi_state = HDMI_CONFIGURATION
+            else (others => '0');
     
-    i2c_data  <= config_reg_value when config_hdmi_state = HDMI_CONFIG_STARTING;
+    i2c_data  <= config_reg_value when config_hdmi_state = HDMI_CONFIG_WAIT or config_hdmi_state = HDMI_CONFIGURATION
+            else (others => '0');
     
     i2c_start <= '1' when config_hdmi_state = HDMI_CONFIG_STARTING
             else '0';
@@ -269,7 +263,7 @@ begin
             if i_rst = '1' then
                 config_address <= 0;
             else
-                if config_hdmi_state = HDMI_CONFIG_STARTING then
+                if config_hdmi_state = HDMI_CONFIGURATION and i2c_ready = '1' and config_address < C_CONFIG_REG_VALUE_PAIRS'high then
                     config_address <= config_address + 1;
                 end if;
             end if;
