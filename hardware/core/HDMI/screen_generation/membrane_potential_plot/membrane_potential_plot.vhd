@@ -36,19 +36,37 @@ entity membrane_potential_plot is
         i_mem_rd_data       : in STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
         i_current_timestamp : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
         i_pointer0          : in STD_LOGIC_VECTOR(9 downto 0);
+        i_npos_hdmi_mon     : in STD_LOGIC_VECTOR(C_LENGTH_SELECTED_NEURONS_INFO-1 downto 0);
         
-        o_mem_rd_en           : out STD_LOGIC;
-        o_mem_rd_addr         : out STD_LOGIC_VECTOR(9 downto 0);
-        o_dot_pixel           : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
-        o_contours_pixel      : out BOOLEAN;
-        o_axes_label_pixel    : out BOOLEAN;
-        o_h_ticks_label_pixel : out BOOLEAN;
-        o_v_ticks_label_pixel : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1)
+        o_mem_rd_en               : out STD_LOGIC;
+        o_mem_rd_addr             : out STD_LOGIC_VECTOR(9 downto 0);
+        o_dot_pixel               : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
+        o_contours_pixel          : out BOOLEAN;
+        o_axes_label_pixel        : out BOOLEAN;
+        o_h_ticks_label_pixel     : out BOOLEAN;
+        o_v_ticks_label_pixel     : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
+        o_sel_neurons_text_pixel  : out BOOLEAN;
+        o_sel_neurons_value_pixel : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1)
     );
 end membrane_potential_plot;
 
 
 architecture Behavioral of membrane_potential_plot is
+    
+    component write_selected_neurons
+        generic (
+            G_V_UP_LIMIT_ALL : STD_LOGIC_VECTOR(11 downto 0)
+        );
+        port (
+            i_clk           : in STD_LOGIC;
+            i_hcounter      : in STD_LOGIC_VECTOR(11 downto 0);
+            i_vcounter      : in STD_LOGIC_VECTOR(11 downto 0);
+            i_npos_hdmi_mon : in STD_LOGIC_VECTOR(C_LENGTH_SELECTED_NEURONS_INFO-1 downto 0);
+            
+            o_text_pixel  : out BOOLEAN;
+            o_value_pixel : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1)
+        );
+    end component;
     
     component plot_contours
         generic (
@@ -90,23 +108,23 @@ architecture Behavioral of membrane_potential_plot is
     
     -----------------------------------------------------------------------------------
     
-    constant C_V_NB_POINTS : INTEGER := C_TARGET_MAX * C_NB_NEURONS_ANALOG + 2 * (C_NB_NEURONS_ANALOG-1);  -- 720 + 6 = 726
+    constant C_V_NB_POINTS : INTEGER := C_ANALOG_PLOT_RANGE * C_NB_NEURONS_ANALOG + 2 * (C_NB_NEURONS_ANALOG-1);  -- 720 + 6 = 726
     
     constant C_V_LOW_LIMIT_ALL : STD_LOGIC_VECTOR(11 downto 0) := C_V_VISIBLE - C_OFFSET;
     constant C_V_UP_LIMIT_ALL  : STD_LOGIC_VECTOR(11 downto 0) := C_V_LOW_LIMIT_ALL - C_V_NB_POINTS;
-    constant C_V_LOW_LIMIT_1   : STD_LOGIC_VECTOR(11 downto 0) := C_V_UP_LIMIT_ALL + C_TARGET_MAX;
+    constant C_V_LOW_LIMIT_1   : STD_LOGIC_VECTOR(11 downto 0) := C_V_UP_LIMIT_ALL + C_ANALOG_PLOT_RANGE;
     
     -----------------------------------------------------------------------------------
     
-    constant C_RANGE_VCNT1 : INTEGER := C_TARGET_MAX/10;  -- vertical tick every  5 mV
-    constant C_RANGE_VCNT2 : INTEGER := 5;                -- vertical tick every 25 mV
-    constant C_RANGE_VCNT3 : INTEGER := 1;                -- vertical tick every 25 mV
+    constant C_RANGE_VCNT1 : INTEGER := C_ANALOG_PLOT_RANGE/10;  -- vertical tick every  5 mV
+    constant C_RANGE_VCNT2 : INTEGER := 5;                       -- vertical tick every 25 mV
+    constant C_RANGE_VCNT3 : INTEGER := 1;                       -- vertical tick every 25 mV
     
     -----------------------------------------------------------------------------------
     
     -- Signal that converts the vertical position to the correspondant analog plot value
     signal plot_cnt         : INTEGER range 0 to C_NB_NEURONS_ANALOG-1;
-    signal shifted_vcounter : INTEGER range 0 to C_TARGET_MAX-1;
+    signal shifted_vcounter : INTEGER range 0 to C_ANALOG_PLOT_RANGE-1;
     signal space_between    : INTEGER range 0 to 2;
     signal in_vplot         : BOOLEAN;
     signal in_between       : BOOLEAN;
@@ -121,12 +139,28 @@ architecture Behavioral of membrane_potential_plot is
     
 begin
     
+    write_selected_neurons_inst : write_selected_neurons
+        generic map (
+            G_V_UP_LIMIT_ALL => C_V_UP_LIMIT_ALL
+        )
+        port map (
+            i_clk           => i_clk,
+            i_hcounter      => i_hcounter,
+            i_vcounter      => i_vcounter,
+            i_npos_hdmi_mon => i_npos_hdmi_mon,
+            
+            o_text_pixel  => o_sel_neurons_text_pixel,
+            o_value_pixel => o_sel_neurons_value_pixel
+        );
+    
+    -----------------------------------------------------------------------------------
+    
     in_between <= (space_between > 0)
             and (i_vcounter <= C_V_LOW_LIMIT_ALL and i_vcounter > C_V_UP_LIMIT_ALL);
     
     plot_contours_inst : plot_contours
         generic map (
-            G_NB_V_POINTS => C_TARGET_MAX,
+            G_NB_V_POINTS => C_ANALOG_PLOT_RANGE,
             G_V_UP_LIMIT  => C_V_UP_LIMIT_ALL,
             G_V_LOW_LIMIT => C_V_LOW_LIMIT_ALL,
             
@@ -174,13 +208,13 @@ begin
                 if i_vcounter = C_V_UP_LIMIT_ALL+1 then
                     
                     plot_cnt         <= 0;
-                    shifted_vcounter <= C_TARGET_MAX-1;
+                    shifted_vcounter <= C_ANALOG_PLOT_RANGE-1;
                     space_between    <= 0;
                     
                 elsif i_vcounter <= C_V_LOW_LIMIT_ALL and i_vcounter > C_V_UP_LIMIT_ALL+1 then
                     
                     if shifted_vcounter = 0 then
-                        shifted_vcounter <= C_TARGET_MAX-1;
+                        shifted_vcounter <= C_ANALOG_PLOT_RANGE-1;
                         space_between    <= 2;
                         plot_cnt         <= plot_cnt + 1;
                     elsif space_between > 0 then

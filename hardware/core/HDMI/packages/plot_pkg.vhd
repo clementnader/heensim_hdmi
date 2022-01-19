@@ -20,6 +20,7 @@
 library IEEE;
     use IEEE.STD_LOGIC_1164.ALL;
     use IEEE.STD_LOGIC_UNSIGNED.ALL;
+    use IEEE.MATH_REAL.ALL;
 
 library work;
     use work.hdmi_resolution_pkg.ALL;
@@ -98,12 +99,20 @@ package plot_pkg is
     
     -- Analog Plot
     type T_COLORS_ARRAY is ARRAY(0 to C_NB_NEURONS_ANALOG-1) of STD_LOGIC_VECTOR(23 downto 0);
+    type T_COLORS_NAME_ARRAY is ARRAY(0 to C_NB_NEURONS_ANALOG-1) of STRING;
     
     constant C_ANALOG_PLOT_COLORS : T_COLORS_ARRAY := (
         0 => C_BLUE,
         1 => C_RED,
         2 => C_GREEN,
         3 => C_ORANGE
+    );
+    
+    constant C_ANALOG_PLOT_COLORS_NAME : T_COLORS_NAME_ARRAY := (
+        0 => "BLUE  ",
+        1 => "RED   ",
+        2 => "GREEN ",
+        3 => "ORANGE"
     );
     
 end package;

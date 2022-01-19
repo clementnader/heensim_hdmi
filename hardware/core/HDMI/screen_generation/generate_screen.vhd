@@ -40,6 +40,7 @@ entity generate_screen is
         i_analog_mem_rd_data : in STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
         i_extend_vaxis       : in STD_LOGIC;
         i_transfer_done      : in STD_LOGIC;
+        i_npos_hdmi_mon      : in STD_LOGIC_VECTOR(C_LENGTH_SELECTED_NEURONS_INFO-1 downto 0);
         
         o_hcounter           : out STD_LOGIC_VECTOR(11 downto 0);
         o_vcounter           : out STD_LOGIC_VECTOR(11 downto 0);
@@ -134,22 +135,25 @@ architecture Behavioral of generate_screen is
             i_mem_rd_data       : in STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
             i_current_timestamp : in STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0);
             i_pointer0          : in STD_LOGIC_VECTOR(9 downto 0);
+            i_npos_hdmi_mon     : in STD_LOGIC_VECTOR(C_LENGTH_SELECTED_NEURONS_INFO-1 downto 0);
             
-            o_mem_rd_en           : out STD_LOGIC;
-            o_mem_rd_addr         : out STD_LOGIC_VECTOR(9 downto 0);
-            o_dot_pixel           : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
-            o_contours_pixel      : out BOOLEAN;
-            o_axes_label_pixel    : out BOOLEAN;
-            o_h_ticks_label_pixel : out BOOLEAN;
-            o_v_ticks_label_pixel : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1)
+            o_mem_rd_en               : out STD_LOGIC;
+            o_mem_rd_addr             : out STD_LOGIC_VECTOR(9 downto 0);
+            o_dot_pixel               : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
+            o_contours_pixel          : out BOOLEAN;
+            o_axes_label_pixel        : out BOOLEAN;
+            o_h_ticks_label_pixel     : out BOOLEAN;
+            o_v_ticks_label_pixel     : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
+            o_sel_neurons_text_pixel  : out BOOLEAN;
+            o_sel_neurons_value_pixel : out T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1)
         );
     end component;
     
     -----------------------------------------------------------------------------------
     
     -- Time-related signals, they update only once per display
-    signal pointer0               : STD_LOGIC_VECTOR( 9 downto 0) := (others => '0');  -- pointer in the memory to the oldest timestamp
-    signal plot_current_timestamp : STD_LOGIC_VECTOR(31 downto 0) := (others => '0');  -- current timestamp that updates only once per display
+    signal pointer0               : STD_LOGIC_VECTOR(9 downto 0) := (others => '0');  -- pointer in the memory to the oldest timestamp
+    signal plot_current_timestamp : STD_LOGIC_VECTOR(C_LENGTH_TIMESTAMP-1 downto 0) := (others => '0');  -- current timestamp that updates only once per display
     
     signal last_transfer_done : STD_LOGIC;
     
@@ -187,6 +191,8 @@ architecture Behavioral of generate_screen is
     signal analog_axes_label_pixel    : BOOLEAN;
     signal analog_h_ticks_label_pixel : BOOLEAN;
     signal analog_v_ticks_label_pixel : T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
+    signal sel_neurons_text_pixel     : BOOLEAN;
+    signal sel_neurons_value_pixel    : T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
     
 begin
     
@@ -299,14 +305,17 @@ begin
             i_mem_rd_data       => i_analog_mem_rd_data,
             i_current_timestamp => plot_current_timestamp,
             i_pointer0          => pointer0,
+            i_npos_hdmi_mon     => i_npos_hdmi_mon,
             
-            o_mem_rd_en           => o_analog_mem_rd_en,
-            o_mem_rd_addr         => o_analog_mem_rd_addr,
-            o_dot_pixel           => analog_dot_pixel,
-            o_contours_pixel      => analog_contours_pixel,
-            o_axes_label_pixel    => analog_axes_label_pixel,
-            o_h_ticks_label_pixel => analog_h_ticks_label_pixel,
-            o_v_ticks_label_pixel => analog_v_ticks_label_pixel
+            o_mem_rd_en               => o_analog_mem_rd_en,
+            o_mem_rd_addr             => o_analog_mem_rd_addr,
+            o_dot_pixel               => analog_dot_pixel,
+            o_contours_pixel          => analog_contours_pixel,
+            o_axes_label_pixel        => analog_axes_label_pixel,
+            o_h_ticks_label_pixel     => analog_h_ticks_label_pixel,
+            o_v_ticks_label_pixel     => analog_v_ticks_label_pixel,
+            o_sel_neurons_text_pixel  => sel_neurons_text_pixel,
+            o_sel_neurons_value_pixel => sel_neurons_value_pixel
         );
     
     -----------------------------------------------------------------------------------
@@ -336,7 +345,7 @@ begin
             else
                 if last_transfer_done = '0' and i_transfer_done = '1' then  -- rising edge
                     plot_current_timestamp <= i_current_timestamp;
-                    if i_current_timestamp(31 downto 10) = 0 then  -- the memory has not been written fully
+                    if i_current_timestamp(i_current_timestamp'high downto pointer0'high+1) = 0 then  -- the memory has not been written fully
                         pointer0 <= (others => '0');
                     else
                         pointer0 <= i_current_timestamp(pointer0'high downto 0) + 1;
@@ -409,11 +418,11 @@ begin
                 
                 -- Analog values plot
                 for i in 0 to C_NB_NEURONS_ANALOG-1 loop
-                    if analog_dot_pixel(i) then
+                    if analog_dot_pixel(i) or sel_neurons_value_pixel(i) then
                         o_color <= C_ANALOG_PLOT_COLORS(i);
                     end if;
                 end loop;
-                if analog_contours_pixel then
+                if analog_contours_pixel or sel_neurons_text_pixel then
                     o_color <= C_BLACK;
                 end if;
                 if analog_axes_label_pixel then

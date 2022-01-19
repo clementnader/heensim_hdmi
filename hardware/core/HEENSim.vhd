@@ -31,9 +31,8 @@ entity HEENSim is
     port (
         i_clk                 : in STD_LOGIC;
         i_rst                 : in STD_LOGIC;
-        i_btn                 : in STD_LOGIC;
         i_spikes_hdmi_rd_fifo : in STD_LOGIC;
-        i_analog_hdmi_rd_fifo : in STD_LOGIC;
+        i_analog_fifo_rd_en   : in STD_LOGIC;
         
         o_spikes_fifo_dout  : out STD_LOGIC_VECTOR(31 downto 0);
         o_spikes_fifo_empty : out STD_LOGIC;
@@ -51,39 +50,12 @@ end HEENSim;
 
 architecture Behavioral of HEENSim is
     
-    component stabilize_inputs
-        generic (
-            G_NB_INPUTS : INTEGER
-        );
-        port (
-            i_clk : in STD_LOGIC;
-            i_in  : in STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0);
-            
-            o_out : out STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0)
-        );
-    end component;
-    
-    component flip_flop_inputs
-        generic (
-            G_NB_INPUTS : INTEGER
-        );
-        port (
-            i_clk : in STD_LOGIC;
-            i_rst : in STD_LOGIC;
-            i_in  : in STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0);
-            
-            o_out : out STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0)
-        );
-    end component;
-    
-    -----------------------------------------------------------------------------------
-    
     component blk_mem_gen_4
         port (
             clka  : in STD_LOGIC;
             ena   : in STD_LOGIC;
             wea   : in STD_LOGIC_VECTOR(0 downto 0);
-            addra : in STD_LOGIC_VECTOR(10 downto 0);
+            addra : in STD_LOGIC_VECTOR(9 downto 0);
             dina  : in STD_LOGIC_VECTOR(17 downto 0);
             
             douta : out STD_LOGIC_VECTOR(17 downto 0)
@@ -138,22 +110,13 @@ architecture Behavioral of HEENSim is
     
     -----------------------------------------------------------------------------------
     
-    -- Stabilized inputs
-    signal buff_btn : STD_LOGIC;
-    
-    -- Pause system
-    signal pause : STD_LOGIC;
-    
-    -----------------------------------------------------------------------------------
-    
     type T_PHASESTATE_FSM is (
         INIT_PHASE,
         CONF_PHASE,
         EXEC_PHASE,
         EXEC_WRITE,
         DIST_PHASE,
-        DIST_READ,
-        DIST_PAUSE
+        DIST_READ
     );
     
     signal phase_state : T_PHASESTATE_FSM := INIT_PHASE;
@@ -162,7 +125,7 @@ architecture Behavioral of HEENSim is
     
     -- BRAM
     signal spikes_mem_en   : STD_LOGIC :=  '0';
-    signal spikes_mem_addr : STD_LOGIC_VECTOR(10 downto 0) := (others => '0');
+    signal spikes_mem_addr : STD_LOGIC_VECTOR(9 downto 0) := (others => '0');
     signal spikes_mem_dout : STD_LOGIC_VECTOR(17 downto 0);
     
     -- FIFO
@@ -183,7 +146,6 @@ architecture Behavioral of HEENSim is
     -- FIFO
     signal analog_fifo_wr_en : STD_LOGIC :=  '0';
     signal analog_fifo_din   : STD_LOGIC_VECTOR(15 downto 0);
-    signal analog_fifo_rd_en : STD_LOGIC :=  '0';
     signal analog_fifo_empty : STD_LOGIC;
     signal analog_fifo_valid : STD_LOGIC;
     signal analog_fifo_dout  : STD_LOGIC_VECTOR(15 downto 0);
@@ -214,7 +176,7 @@ begin
     o_ph_init <= '1' when phase_state = INIT_PHASE else '0';
     o_ph_conf <= '1' when phase_state = CONF_PHASE else '0';
     o_ph_exec <= '1' when phase_state = EXEC_PHASE or phase_state = EXEC_WRITE else '0';
-    o_ph_dist <= '1' when phase_state = DIST_PHASE or phase_state = DIST_READ or phase_state = DIST_PAUSE else '0';
+    o_ph_dist <= '1' when phase_state = DIST_PHASE or phase_state = DIST_READ else '0';
     
     -- FIFO signals
     o_spikes_fifo_empty <= spikes_fifo_empty;
@@ -224,33 +186,6 @@ begin
     o_analog_fifo_empty <= analog_fifo_empty;
     o_analog_fifo_valid <= analog_fifo_valid;
     o_analog_fifo_dout  <= analog_fifo_dout;
-    
---  ===================================================================================
---  ----------------------------------- Button Input ----------------------------------
---  ===================================================================================
-    
-    stabilize_inputs_inst : stabilize_inputs
-        generic map (
-            G_NB_INPUTS => 1
-        )
-        port map (
-            i_clk   => i_clk,
-            i_in(0) => i_btn,
-            
-            o_out(0) => buff_btn
-        );
-    
-    flip_flop_inputs_inst : flip_flop_inputs
-        generic map (
-            G_NB_INPUTS => 1
-        )
-        port map (
-            i_clk   => i_clk,
-            i_rst   => i_rst,
-            i_in(0) => buff_btn,
-            
-            o_out(0) => pause
-        );
     
     -----------------------------------------------------------------------------------
     
@@ -299,7 +234,7 @@ begin
             srst  => i_rst,
             din   => analog_fifo_din,
             wr_en => analog_fifo_wr_en,
-            rd_en => analog_fifo_rd_en,
+            rd_en => i_analog_fifo_rd_en,
             
             dout       => analog_fifo_dout,
             full       => open,
@@ -320,7 +255,6 @@ begin
                 spikes_mem_en     <= '0';
                 spikes_mem_addr   <= (others => '0');
                 analog_fifo_wr_en <= '0';
-                analog_fifo_rd_en <= '0';
                 analog_mem_en     <= '0';
                 analog_mem_addr   <= (others => '0');
                 phase_state       <= INIT_PHASE;
@@ -333,7 +267,6 @@ begin
                         spikes_fifo_rd_en <= '0';
                         spikes_mem_en     <= '0';
                         analog_fifo_wr_en <= '0';
-                        analog_fifo_rd_en <= '0';
                         analog_mem_en     <= '0';
                         count             <= (others => '0');
                         period_count      <= (others => '0');
@@ -388,37 +321,23 @@ begin
                         end if;
                         count       <= count + 1;
                         phase_state <= EXEC_PHASE;
-                    
+                        
                     when DIST_PHASE =>
                         period_count <= period_count + 1;
                         if spikes_fifo_empty = '0' and i_spikes_hdmi_rd_fifo = '1' then
                             spikes_fifo_rd_en <= '1';
                             phase_state       <= DIST_READ;
                         end if;
-                        if analog_fifo_empty = '0' and i_analog_hdmi_rd_fifo = '1' then
-                            analog_fifo_rd_en <= '1';
-                            phase_state       <= DIST_READ;
-                        end if;
                         if period_count = G_PERIOD then
                             count        <= (others => '0');
                             period_count <= (others => '0');
-                            if pause = '0' then
-                                phase_state <= EXEC_PHASE;
-                            else
-                                phase_state <= DIST_PAUSE;
-                            end if;
+                            phase_state <= EXEC_PHASE;
                         end if;
                     
                     when DIST_READ =>
                         period_count      <= period_count + 1;
                         spikes_fifo_rd_en <= '0';
-                        analog_fifo_rd_en <= '0';
                         phase_state       <= DIST_PHASE;
-                    
-                    when DIST_PAUSE =>
-                        if pause = '0' then
-                            phase_state <= EXEC_PHASE;
-                        end if;
                     
                     when others =>
                         phase_state <= INIT_PHASE;

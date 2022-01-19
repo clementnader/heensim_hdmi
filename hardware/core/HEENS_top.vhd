@@ -27,7 +27,6 @@ entity HEENS_top is
         GCLK             : in STD_LOGIC;  -- 100 MHz
         GCLK_P, GCLK_N   : in STD_LOGIC;  -- 200 MHz
         BTNL, BTNC, BTNR : in STD_LOGIC;
-        BTND             : in STD_LOGIC;
         
         LD         : out STD_LOGIC_VECTOR(3 downto 0);
         HDMI_CLK   : out STD_LOGIC;
@@ -51,9 +50,8 @@ architecture Behavioral of HEENS_top is
         port (
             i_clk                 : in STD_LOGIC;
             i_rst                 : in STD_LOGIC;
-            i_btn                 : in STD_LOGIC;
             i_spikes_hdmi_rd_fifo : in STD_LOGIC;
-            i_analog_hdmi_rd_fifo : in STD_LOGIC;
+            i_analog_fifo_rd_en   : in STD_LOGIC;
             
             o_spikes_fifo_dout  : out STD_LOGIC_VECTOR(31 downto 0);
             o_spikes_fifo_empty : out STD_LOGIC;
@@ -83,9 +81,10 @@ architecture Behavioral of HEENS_top is
             i_analog_fifo_empty : in STD_LOGIC;
             i_analog_fifo_valid : in STD_LOGIC;
             i_analog_fifo_dout  : in STD_LOGIC_VECTOR(15 downto 0);
+            i_npos_hdmi_mon     : in STD_LOGIC_VECTOR(43 downto 0);
             
             o_spikes_hdmi_rd_fifo : out STD_LOGIC;
-            o_analog_hdmi_rd_fifo : out STD_LOGIC;
+            o_analog_fifo_rd_en   : out STD_LOGIC;
             o_hdmi_clk            : out STD_LOGIC;
             o_hdmi_d              : out STD_LOGIC_VECTOR(35 downto 0);
             o_hdmi_de             : out STD_LOGIC;
@@ -124,6 +123,12 @@ architecture Behavioral of HEENS_top is
     signal ph_exec : STD_LOGIC;  -- execution phase
     signal ph_dist : STD_LOGIC;  -- distribution phase
     
+    -- Extended raster plot signal
+    signal hdmi_ext_plot : STD_LOGIC;
+    
+    -- Neurons to monitor on HDMI
+    signal npos_hdmi_mon : STD_LOGIC_VECTOR(43 downto 0) := x"6008008000";
+    
     -- Signals from the spikes FIFO
     signal spikes_empty_input_fifo : STD_LOGIC;  -- empty signal from the spikes FIFO
     signal spikes_valid_input_fifo : STD_LOGIC;  -- valid signal from the spikes FIFO
@@ -134,7 +139,7 @@ architecture Behavioral of HEENS_top is
     signal analog_empty_input_fifo : STD_LOGIC;  -- empty signal from the analog FIFO
     signal analog_valid_input_fifo : STD_LOGIC;  -- valid signal from the analog FIFO
     signal analog_dout_input_fifo  : STD_LOGIC_VECTOR(15 downto 0);  -- output data from the analog FIFO
-    signal analog_hdmi_rd_fifo     : STD_LOGIC;  -- flag to tell HEENS we are ready to read from the analog FIFO
+    signal analog_rd_en_input_fifo : STD_LOGIC;  -- read enable signal from the analog FIFO
     
 begin
     
@@ -142,7 +147,8 @@ begin
 --  ---------------------------------------- I/O --------------------------------------
 --  ===================================================================================
     
-    rst_pl <= BTNL;
+    rst_pl        <= BTNL;
+    hdmi_ext_plot <= BTNC;
     
     LD(0) <= ph_init;
     LD(1) <= ph_conf;
@@ -161,9 +167,8 @@ begin
         port map (
             i_clk                 => heens_clk,
             i_rst                 => rst_pl,
-            i_btn                 => BTND,
             i_spikes_hdmi_rd_fifo => spikes_hdmi_rd_fifo,
-            i_analog_hdmi_rd_fifo => analog_hdmi_rd_fifo,
+            i_analog_fifo_rd_en   => analog_rd_en_input_fifo,
             
             o_spikes_fifo_dout  => spikes_dout_input_fifo,
             o_spikes_fifo_empty => spikes_empty_input_fifo,
@@ -186,7 +191,7 @@ begin
             i_heens_clk         => heens_clk,
             i_pixel_clk         => pixel_clk,
             i_rst               => rst_pl,
-            i_btn               => BTNC,
+            i_btn               => hdmi_ext_plot,
             i_ph_dist           => ph_dist,
             i_spikes_fifo_empty => spikes_empty_input_fifo,
             i_spikes_fifo_valid => spikes_valid_input_fifo,
@@ -194,9 +199,10 @@ begin
             i_analog_fifo_empty => analog_empty_input_fifo,
             i_analog_fifo_valid => analog_valid_input_fifo,
             i_analog_fifo_dout  => analog_dout_input_fifo,
+            i_npos_hdmi_mon     => npos_hdmi_mon,
             
             o_spikes_hdmi_rd_fifo => spikes_hdmi_rd_fifo,
-            o_analog_hdmi_rd_fifo => analog_hdmi_rd_fifo,
+            o_analog_fifo_rd_en   => analog_rd_en_input_fifo,
             o_hdmi_clk            => HDMI_CLK,
             o_hdmi_d              => HDMI_D,
             o_hdmi_de             => HDMI_DE,

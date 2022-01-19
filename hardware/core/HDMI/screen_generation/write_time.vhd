@@ -298,9 +298,9 @@ begin
     
     ------------------------------------------
     
-    time_mn_bool  <= not ((cnt_mn(1) = -1 and cnt_mn(0) = 0) and h_time_mn_i = 0);
-    time_hr_bool  <= not ((cnt_hr(1) = -1 and cnt_hr(0) = 0) and h_time_hr_i = 0);
-    time_day_bool <= not ((cnt_day(1) = -1 and cnt_day(0) = 0));
+    time_mn_bool  <= h_time_s_i /= 0;
+    time_hr_bool  <= h_time_mn_i /= 0;
+    time_day_bool <= h_time_hr_i /= 0;
     
     -----------------------------------------------------------------------------------
     

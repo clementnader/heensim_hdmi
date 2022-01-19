@@ -72,15 +72,14 @@ package neurons_pkg is
     
     -----------------------------------------------------------------------------------
     
+    constant C_ANALOG_PLOT_RANGE : INTEGER := 180;
+    
     constant C_ANALOG_VALUE_SIZE : INTEGER := 16;
     
     constant C_ANALOG_MIN_VALUE : INTEGER := -8000;
     constant C_ANALOG_MAX_VALUE : INTEGER := -3000;
     
-    constant C_TARGET_MIN : INTEGER := 0;
-    constant C_TARGET_MAX : INTEGER := 180;
-    
-    constant C_ANALOG_PLOT_VALUE_SIZE : INTEGER := integer(ceil(log2(real(C_TARGET_MAX))));  -- 8
+    constant C_ANALOG_PLOT_VALUE_SIZE : INTEGER := integer(floor(log2(real(C_ANALOG_PLOT_RANGE))))+1;  -- 8
     
     constant C_NB_NEURONS_ANALOG : INTEGER := 4;
     
@@ -88,11 +87,22 @@ package neurons_pkg is
     
     -----------------------------------------------------------------------------------
     
-    constant C_ANALOG_TRANSFORM_DIVIDER : REAL    := real(C_ANALOG_MAX_VALUE-C_ANALOG_MIN_VALUE) / real(C_TARGET_MAX-C_TARGET_MIN);
-    constant C_ANALOG_TRANSFORM_ADDER   : INTEGER := C_TARGET_MIN - C_ANALOG_MIN_VALUE;
+    constant C_ANALOG_TRANSFORM_DIVIDER : REAL    := real(C_ANALOG_MAX_VALUE-C_ANALOG_MIN_VALUE) / real(C_ANALOG_PLOT_RANGE-1);
+    constant C_ANALOG_TRANSFORM_ADDER   : INTEGER := 0 - C_ANALOG_MIN_VALUE;
     
     constant C_ANALOG_DIV_PRECISION_BITS : INTEGER := 16;
     constant C_ANALOG_DIV_MULTIPLIER     : INTEGER := integer(ceil(real(2**C_ANALOG_DIV_PRECISION_BITS)/C_ANALOG_TRANSFORM_DIVIDER));
+    
+    -----------------------------------------------------------------------------------
+    
+    constant C_VIRT_NB_DIGITS   : INTEGER := integer(floor(log10(real(2**C_LENGTH_VIRT))))+1;    -- 1
+    constant C_ROW_NB_DIGITS    : INTEGER := integer(floor(log10(real(2**C_LENGTH_ROW))))+1;     -- 2
+    constant C_COLUMN_NB_DIGITS : INTEGER := integer(floor(log10(real(2**C_LENGTH_COLUMN))))+1;  -- 2
+    
+    -----------------------------------------------------------------------------------
+    
+    constant C_LENGTH_NEURON_INFO           : INTEGER := C_LENGTH_VIRT + C_LENGTH_ROW + C_LENGTH_COLUMN;
+    constant C_LENGTH_SELECTED_NEURONS_INFO : INTEGER := C_NB_NEURONS_ANALOG*C_LENGTH_NEURON_INFO;
     
 end package;
 

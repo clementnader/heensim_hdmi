@@ -38,12 +38,11 @@ entity read_fifo_analog is
         i_fifo_dout         : in STD_LOGIC_VECTOR(C_ANALOG_VALUE_SIZE-1 downto 0);
         i_end_screen        : in STD_LOGIC;
         
-        o_hdmi_rd_fifo  : out STD_LOGIC;
+        o_fifo_rd_en    : out STD_LOGIC;
         o_mem_wr_en     : out STD_LOGIC;
         o_mem_wr_we     : out STD_LOGIC;
         o_mem_wr_addr   : out STD_LOGIC_VECTOR(9 downto 0);
-        o_mem_wr_din    : out STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
-        o_transfer_done : out STD_LOGIC
+        o_mem_wr_din    : out STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0)
     );
 end read_fifo_analog;
 
@@ -93,11 +92,11 @@ architecture Behavioral of read_fifo_analog is
             
         begin
             
-            -- saturate between C_TARGET_MIN and C_TARGET_MAX-1
-            if div_value < C_TARGET_MIN then
-                res_value := std_logic_vector(to_unsigned(C_TARGET_MIN, C_ANALOG_VALUE_SIZE));
-            elsif div_value > C_TARGET_MAX-1 then
-                res_value := std_logic_vector(to_unsigned(C_TARGET_MAX-1, C_ANALOG_VALUE_SIZE));
+            -- saturate between 0 and C_ANALOG_PLOT_RANGE-1
+            if div_value < 0 then
+                res_value := std_logic_vector(to_unsigned(0, C_ANALOG_VALUE_SIZE));
+            elsif div_value > C_ANALOG_PLOT_RANGE-1 then
+                res_value := std_logic_vector(to_unsigned(C_ANALOG_PLOT_RANGE-1, C_ANALOG_VALUE_SIZE));
             else
                 res_value := std_logic_vector(div_value);
             end if;
@@ -112,8 +111,8 @@ architecture Behavioral of read_fifo_analog is
     type T_FIFO_RD_STATE is (
         IDLE,
         FIFO_READ,
-        ANALOG_VALUE_DIV,
-        ANALOG_VALUE_CALC,
+        VALUE_CONVERT,
+        VALUE_SAT,
         MEM_WRITE,
         FIFO_EMPTY,
         WAIT_BEFORE_TRANSFER,
@@ -191,13 +190,13 @@ begin
                     -- Distribution phase: read the FIFO and store the spikes in the buffer
                     when FIFO_READ =>
                         if i_fifo_valid = '1' then
-                            fifo_rd_state <= ANALOG_VALUE_DIV;
+                            fifo_rd_state <= VALUE_CONVERT;
                         end if;
                     
-                    when ANALOG_VALUE_DIV =>
-                        fifo_rd_state <= ANALOG_VALUE_CALC;
+                    when VALUE_CONVERT =>
+                        fifo_rd_state <= VALUE_SAT;
                     
-                    when ANALOG_VALUE_CALC =>
+                    when VALUE_SAT =>
                         fifo_rd_state <= MEM_WRITE;
                     
                     when MEM_WRITE =>
@@ -238,8 +237,10 @@ begin
     
     -----------------------------------------------------------------------------------
     
-    o_hdmi_rd_fifo <= '1' when fifo_rd_state = FIFO_READ and i_fifo_valid = '0'
-                 else '0';
+    o_fifo_rd_en <= '1' when ((fifo_rd_state = IDLE and i_ph_dist = '1')
+                           or fifo_rd_state = MEM_WRITE
+                           or fifo_rd_state = FIFO_EMPTY) and i_fifo_empty = '0'
+               else '0';
     
     -----------------------------------------------------------------------------------
     
@@ -272,10 +273,10 @@ begin
             if (fifo_rd_state = FIFO_READ and i_fifo_valid = '1') then
                 analog_value <= signed(i_fifo_dout);
             
-            elsif fifo_rd_state = ANALOG_VALUE_DIV then
+            elsif fifo_rd_state = VALUE_CONVERT then
                 div_value <= transform_analog_value(analog_value);
                 
-            elsif fifo_rd_state = ANALOG_VALUE_CALC then
+            elsif fifo_rd_state = VALUE_SAT then
                 analog_plot_value <= saturate_analog_value(div_value);
             
             elsif fifo_rd_state = MEM_WRITE and neuron_cnt < C_NB_NEURONS_ANALOG-1 then

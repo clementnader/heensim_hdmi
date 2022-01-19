@@ -100,13 +100,13 @@ architecture Behavioral of write_axes_and_ticks_label_analog is
     constant C_V_RIGHT_TICK_HPOS : STD_LOGIC_VECTOR(11 downto 0) := C_H_UP_LIMIT  + 14;
     
     constant C_V_LOW_TICK_VPOS : STD_LOGIC_VECTOR(11 downto 0) := G_V_LOW_LIMIT_1                  - C_FONT_HEIGHT/2 + 1;
-    constant C_V_MID_TICK_VPOS : STD_LOGIC_VECTOR(11 downto 0) := G_V_LOW_LIMIT_1 - C_TARGET_MAX/2 - C_FONT_HEIGHT/2 + 1;
+    constant C_V_MID_TICK_VPOS : STD_LOGIC_VECTOR(11 downto 0) := G_V_LOW_LIMIT_1 - C_ANALOG_PLOT_RANGE/2 - C_FONT_HEIGHT/2 + 1;
     
     signal v_low_left_ticks_pixel  : T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
     signal v_mid_left_ticks_pixel  : T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
     signal v_mid_right_ticks_pixel : T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
     
-    constant C_DOTTED_LINE_VPOS : STD_LOGIC_VECTOR(11 downto 0) := G_V_LOW_LIMIT_1 - C_TARGET_MAX/2;
+    constant C_DOTTED_LINE_VPOS : STD_LOGIC_VECTOR(11 downto 0) := G_V_LOW_LIMIT_1 - C_ANALOG_PLOT_RANGE/2;
     
     signal dotted_line_pixel : T_BOOLEAN_ARRAY(0 to C_NB_NEURONS_ANALOG-1);
     
@@ -167,7 +167,7 @@ begin
                 i_do_display   => True,
                 i_display_text => C_V_LOW_TICK_VALUE,
                 i_text_hpos    => C_V_LEFT_TICK_HPOS,
-                i_text_vpos    => C_V_LOW_TICK_VPOS + (C_TARGET_MAX + 2)*i,
+                i_text_vpos    => C_V_LOW_TICK_VPOS + (C_ANALOG_PLOT_RANGE + 2)*i,
                 i_hcounter     => i_hcounter,
                 i_vcounter     => i_vcounter,
                 
@@ -183,7 +183,7 @@ begin
                 i_do_display   => True,
                 i_display_text => C_V_MID_TICK_VALUE,
                 i_text_hpos    => C_V_LEFT_TICK_HPOS,
-                i_text_vpos    => C_V_MID_TICK_VPOS + (C_TARGET_MAX + 2)*i,
+                i_text_vpos    => C_V_MID_TICK_VPOS + (C_ANALOG_PLOT_RANGE + 2)*i,
                 i_hcounter     => i_hcounter,
                 i_vcounter     => i_vcounter,
                 
@@ -199,7 +199,7 @@ begin
                 i_do_display   => True,
                 i_display_text => C_V_MID_TICK_LABEL,
                 i_text_hpos    => C_V_RIGHT_TICK_HPOS,
-                i_text_vpos    => C_V_MID_TICK_VPOS - 1 + (C_TARGET_MAX + 2)*i,
+                i_text_vpos    => C_V_MID_TICK_VPOS - 1 + (C_ANALOG_PLOT_RANGE + 2)*i,
                 i_hcounter     => i_hcounter,
                 i_vcounter     => i_vcounter,
                 
@@ -219,7 +219,7 @@ begin
             if i_hcounter >= C_H_LOW_LIMIT and i_hcounter < C_H_UP_LIMIT then
                 for i in 0 to C_NB_NEURONS_ANALOG-1 loop
                     
-                    if i_vcounter = C_DOTTED_LINE_VPOS + (C_TARGET_MAX + 2)*i
+                    if i_vcounter = C_DOTTED_LINE_VPOS + (C_ANALOG_PLOT_RANGE + 2)*i
                      and i_hcounter(2) = '0' then
                         dotted_line_pixel(i) <= True;
                     end if;

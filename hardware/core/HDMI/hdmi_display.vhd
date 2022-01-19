@@ -38,9 +38,10 @@ entity hdmi_display is
         i_analog_fifo_empty : in STD_LOGIC;
         i_analog_fifo_valid : in STD_LOGIC;
         i_analog_fifo_dout  : in STD_LOGIC_VECTOR(C_ANALOG_VALUE_SIZE-1 downto 0);
+        i_npos_hdmi_mon     : in STD_LOGIC_VECTOR(C_LENGTH_SELECTED_NEURONS_INFO-1 downto 0);
         
         o_spikes_hdmi_rd_fifo : out STD_LOGIC;
-        o_analog_hdmi_rd_fifo : out STD_LOGIC;
+        o_analog_fifo_rd_en   : out STD_LOGIC;
         o_hdmi_clk            : out STD_LOGIC;
         o_hdmi_d              : out STD_LOGIC_VECTOR(35 downto 0);
         o_hdmi_de             : out STD_LOGIC;
@@ -159,12 +160,11 @@ architecture Behavioral of hdmi_display is
             i_fifo_dout         : in STD_LOGIC_VECTOR(C_ANALOG_VALUE_SIZE-1 downto 0);
             i_end_screen        : in STD_LOGIC;
             
-            o_hdmi_rd_fifo  : out STD_LOGIC;
+            o_fifo_rd_en    : out STD_LOGIC;
             o_mem_wr_en     : out STD_LOGIC;
             o_mem_wr_we     : out STD_LOGIC;
             o_mem_wr_addr   : out STD_LOGIC_VECTOR(9 downto 0);
-            o_mem_wr_din    : out STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
-            o_transfer_done : out STD_LOGIC
+            o_mem_wr_din    : out STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0)
         );
     end component;
     
@@ -199,6 +199,7 @@ architecture Behavioral of hdmi_display is
             i_analog_mem_rd_data : in STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);
             i_extend_vaxis       : in STD_LOGIC;
             i_transfer_done      : in STD_LOGIC;
+            i_npos_hdmi_mon      : in STD_LOGIC_VECTOR(C_LENGTH_SELECTED_NEURONS_INFO-1 downto 0);
             
             o_hcounter           : out STD_LOGIC_VECTOR(11 downto 0);
             o_vcounter           : out STD_LOGIC_VECTOR(11 downto 0);
@@ -424,7 +425,7 @@ begin
             i_fifo_dout         => i_analog_fifo_dout,
             i_end_screen        => heens_clk_plot_end_screen,
             
-            o_hdmi_rd_fifo  => o_analog_hdmi_rd_fifo,
+            o_fifo_rd_en    => o_analog_fifo_rd_en,
             o_mem_wr_en     => analog_mem_wr_en,
             o_mem_wr_we     => analog_mem_wr_we,
             o_mem_wr_addr   => analog_mem_wr_addr,
@@ -463,6 +464,7 @@ begin
             i_analog_mem_rd_data => analog_mem_rd_data,
             i_extend_vaxis       => extend_vaxis,
             i_transfer_done      => pixel_clk_sp_fsm_transfer_done,
+            i_npos_hdmi_mon      => i_npos_hdmi_mon,
             
             o_hcounter           => plot_hcounter,
             o_vcounter           => plot_vcounter,

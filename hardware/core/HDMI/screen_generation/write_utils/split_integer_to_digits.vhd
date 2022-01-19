@@ -33,7 +33,7 @@ entity split_integer_to_digits is
         i_clk     : in STD_LOGIC;
         i_integer : in INTEGER range 0 to 10**G_NB_DIGITS-1;
         
-        o_digits : out T_DIGITS_ARRAY(0 to G_NB_DIGITS-1)
+        o_digits : out T_DIGITS_ARRAY(G_NB_DIGITS-1 downto 0)
     );
 end split_integer_to_digits;
 
@@ -52,9 +52,9 @@ begin
             
             quotient := i_integer;
             
-            for i in G_NB_DIGITS-1 downto 0 loop
+            for i in 0 to G_NB_DIGITS-1 loop
                 
-                if i < G_NB_DIGITS-1 and quotient = 0 then
+                if i > 0 and quotient = 0 then
                     o_digits(i) <= -1;
                 else
                     remain   := quotient mod 10;
