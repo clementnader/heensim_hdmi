@@ -125,6 +125,8 @@ architecture Behavioral of membrane_potential_plot is
     -- Signal that converts the vertical position to the correspondant analog plot value
     signal plot_cnt         : INTEGER range 0 to C_NB_NEURONS_ANALOG-1;
     signal shifted_vcounter : INTEGER range 0 to C_ANALOG_PLOT_RANGE-1;
+    
+    -- Signals for the delimitation between the different graphs
     signal space_between    : INTEGER range 0 to 2;
     signal in_vplot         : BOOLEAN;
     signal in_between       : BOOLEAN;
@@ -132,10 +134,9 @@ architecture Behavioral of membrane_potential_plot is
     -- Signal of the current memory address to read
     signal mem_rd_addr : STD_LOGIC_VECTOR(9 downto 0);
     
-    -- Signals to have dots as a '+' of 3-pixel diameter
+    -- Signals to draw vertical lines between successive dots
     signal mem_column_before  : STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);  -- the column of analog values corresponding to the previous timestamp
     signal mem_column_current : STD_LOGIC_VECTOR(C_ANALOG_MEM_SIZE-1 downto 0);  -- the column of analog values corresponding to the current timestamp
-    -- the column that corresponds to the next timestamp is the input i_mem_rd_data
     
 begin
     
