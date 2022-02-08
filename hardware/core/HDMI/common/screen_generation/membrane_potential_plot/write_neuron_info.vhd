@@ -98,9 +98,11 @@ architecture Behavioral of write_neuron_info is
     
     constant C_NEURON_STR : STRING := "Neuron in";
     
-    constant C_VIRT_STR   : STRING := "Virtualization Level:";
+    constant C_VIRT_STR   : STRING := "Virtualization level:";
     constant C_ROW_STR    : STRING := "Row:";
     constant C_COLUMN_STR : STRING := "Column:";
+    
+    constant C_NUMERO_STR : STRING := "Identifier value:";
     
     constant C_BASE_H_POS      : STD_LOGIC_VECTOR(11 downto 0) := x"008";
     constant C_BASE_H_POS_INFO : STD_LOGIC_VECTOR(11 downto 0) := C_BASE_H_POS + x"008";
@@ -110,13 +112,15 @@ architecture Behavioral of write_neuron_info is
     signal neuron_pixel : BOOLEAN;
     signal color_pixel  : BOOLEAN;
     
+    -----------------------------------------------------------------------------------
+    
     signal virt_value   : STD_LOGIC_VECTOR(C_LENGTH_VIRT-1 downto 0);
     signal row_value    : STD_LOGIC_VECTOR(C_LENGTH_ROW-1 downto 0);
     signal column_value : STD_LOGIC_VECTOR(C_LENGTH_COLUMN-1 downto 0);
     
-    signal virt_int   : INTEGER range 0 to 2**C_LENGTH_VIRT-1;
-    signal row_int    : INTEGER range 0 to 2**C_LENGTH_ROW-1;
-    signal column_int : INTEGER range 0 to 2**C_LENGTH_COLUMN-1;
+    signal virt_int   : INTEGER range 0 to C_MAX_VIRT;
+    signal row_int    : INTEGER range 0 to C_MAX_ROW;
+    signal column_int : INTEGER range 0 to C_MAX_COLUMN;
     
     signal virt_digits_array   : T_DIGITS_ARRAY(C_VIRT_NB_DIGITS-1 downto 0);
     signal row_digits_array    : T_DIGITS_ARRAY(C_ROW_NB_DIGITS-1 downto 0);
@@ -130,10 +134,19 @@ architecture Behavioral of write_neuron_info is
     signal row_val_pixel    : BOOLEAN;
     signal column_val_pixel : BOOLEAN;
     
+    -----------------------------------------------------------------------------------
+    
+    signal numero_int : INTEGER range 0 to C_MAX_ID;
+    
+    signal numero_digits_array : T_DIGITS_ARRAY(C_NUMERO_NB_DIGITS-1 downto 0);
+    
+    signal numero_pixel     : BOOLEAN;
+    signal numero_val_pixel : BOOLEAN;
+    
 begin
     
-    o_text_pixel  <= neuron_pixel or virt_pixel     or row_pixel     or column_pixel;
-    o_value_pixel <= color_pixel  or virt_val_pixel or row_val_pixel or column_val_pixel;
+    o_text_pixel  <= neuron_pixel or virt_pixel     or row_pixel     or column_pixel     or numero_pixel;
+    o_value_pixel <= color_pixel  or virt_val_pixel or row_val_pixel or column_val_pixel or numero_val_pixel;
     
     -----------------------------------------------------------------------------------
     
@@ -141,9 +154,20 @@ begin
     row_value    <= i_neuron_id(C_LENGTH_ROW+C_LENGTH_COLUMN-1 downto C_LENGTH_COLUMN);
     virt_value   <= i_neuron_id(i_neuron_id'high downto C_LENGTH_ROW+C_LENGTH_COLUMN);
     
-    virt_int   <= to_integer(unsigned(virt_value));
-    row_int    <= to_integer(unsigned(row_value));
     column_int <= to_integer(unsigned(column_value));
+    row_int    <= to_integer(unsigned(row_value));
+    virt_int   <= to_integer(unsigned(virt_value));
+    
+    -----------------------------------------------------------------------------------
+    
+    get_id_value_proc : process(i_clk)
+    begin
+        if rising_edge(i_clk) then
+            
+            numero_int <= get_id_value("0000000" & i_neuron_id);
+            
+        end if;
+    end process;
     
     -----------------------------------------------------------------------------------
     
@@ -316,6 +340,52 @@ begin
             i_vcounter     => i_vcounter,
             
             o_pixel => column_val_pixel
+        );
+    
+    -----------------------------------------------------------------------------------
+    
+    -- Neuron numero
+    write_text_inst_numero : write_text
+        generic map (
+            G_TEXT_LENGTH => C_NUMERO_STR'length
+        )
+        port map (
+            i_clk          => i_clk,
+            i_do_display   => True,
+            i_display_text => C_NUMERO_STR,
+            i_text_hpos    => C_BASE_H_POS_INFO,
+            i_text_vpos    => G_TOP_V_POS + C_FONT_HEIGHT*5,
+            i_hcounter     => i_hcounter,
+            i_vcounter     => i_vcounter,
+            
+            o_pixel => numero_pixel
+        );
+    
+    split_integer_to_digits_inst_numero : split_integer_to_digits
+        generic map (
+            G_NB_DIGITS => C_NUMERO_NB_DIGITS
+        )
+        port map (
+            i_clk     => i_clk,
+            i_integer => numero_int,
+            
+            o_digits => numero_digits_array
+        );
+    
+    write_text_integer_inst_numero : write_text_integer
+        generic map (
+            G_NB_DIGITS => C_NUMERO_NB_DIGITS
+        )
+        port map (
+            i_clk          => i_clk,
+            i_do_display   => True,
+            i_display_int  => numero_digits_array,
+            i_text_hpos    => C_BASE_H_POS_INFO + (C_NUMERO_STR'length+1)*C_FONT_WIDTH,
+            i_text_vpos    => G_TOP_V_POS + C_FONT_HEIGHT*5,
+            i_hcounter     => i_hcounter,
+            i_vcounter     => i_vcounter,
+            
+            o_pixel => numero_val_pixel
         );
     
 end Behavioral;

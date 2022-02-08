@@ -93,9 +93,9 @@ architecture Behavioral of raster_plot_ext is
     constant C_V_UP_LIMIT  : STD_LOGIC_VECTOR(11 downto 0) := C_OFFSET;
     constant C_V_LOW_LIMIT : STD_LOGIC_VECTOR(11 downto 0) := C_V_UP_LIMIT + G_NB_NEURONS;
     
-    constant C_RANGE_VCNT1 : INTEGER := 10;  -- vertical tick every  10 neurons
-    constant C_RANGE_VCNT2 : INTEGER := 5;   -- vertical tick every  50 neurons
-    constant C_RANGE_VCNT3 : INTEGER := 2;   -- vertical tick every 100 neurons
+    constant C_RANGE_VCNT1 : INTEGER := 1;   -- vertical tick every    neuron
+    constant C_RANGE_VCNT2 : INTEGER := 10;  -- vertical tick every 10 neurons
+    constant C_RANGE_VCNT3 : INTEGER := 5;   -- vertical tick every 50 neurons
     
     -----------------------------------------------------------------------------------
     

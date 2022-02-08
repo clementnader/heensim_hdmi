@@ -50,6 +50,7 @@ architecture Behavioral of HEENS_top is
         port (
             i_clk                 : in STD_LOGIC;
             i_rst                 : in STD_LOGIC;
+            i_btn                 : in STD_LOGIC;
             i_spikes_hdmi_rd_fifo : in STD_LOGIC;
             i_analog_fifo_rd_en   : in STD_LOGIC;
             
@@ -126,8 +127,14 @@ architecture Behavioral of HEENS_top is
     -- Extended raster plot signal
     signal hdmi_ext_plot : STD_LOGIC;
     
+    -- Pause signal
+    signal pause_btn : STD_LOGIC;
+    
     -- Neurons to monitor on HDMI
-    signal npos_hdmi_mon : STD_LOGIC_VECTOR(43 downto 0) := x"6008008000";
+    signal npos_hdmi_mon : STD_LOGIC_VECTOR(43 downto 0) := b"101_0011_0100"
+                                                          & b"000_0001_0011"
+                                                          & b"000_0001_0000"
+                                                          & b"000_0000_0000";
     
     -- Signals from the spikes FIFO
     signal spikes_empty_input_fifo : STD_LOGIC;  -- empty signal from the spikes FIFO
@@ -149,6 +156,7 @@ begin
     
     rst_pl        <= BTNL;
     hdmi_ext_plot <= BTNC;
+    pause_btn     <= BTNR;
     
     LD(0) <= ph_init;
     LD(1) <= ph_conf;
@@ -167,6 +175,7 @@ begin
         port map (
             i_clk                 => heens_clk,
             i_rst                 => rst_pl,
+            i_btn                 => pause_btn,
             i_spikes_hdmi_rd_fifo => spikes_hdmi_rd_fifo,
             i_analog_fifo_rd_en   => analog_rd_en_input_fifo,
             

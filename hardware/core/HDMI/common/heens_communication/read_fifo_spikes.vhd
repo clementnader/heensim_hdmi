@@ -177,7 +177,7 @@ begin
                     when FIFO_EMPTY =>
                         if i_fifo_empty = '0' then
                             fifo_rd_state <= FIFO_READ;
-                        elsif transfer_from_buffer = '1' then
+                        elsif transfer_from_buffer = '1' and buffer_cnt > 0 then
                             fifo_rd_state <= WAIT_BEFORE_TRANSFER;
                         elsif i_ph_dist = '0' then
                             fifo_rd_state <= IDLE;
@@ -208,9 +208,6 @@ begin
     o_hdmi_rd_fifo <= '1' when fifo_rd_state = FIFO_READ and i_fifo_valid = '0'
                  else '0';
     
-    o_transfer_done <= '1' when fifo_rd_state = TRANSFER_WRITE and buffer_addr = buffer_cnt + 1
-                  else '0' when fifo_rd_state = IDLE;
-    
     -----------------------------------------------------------------------------------
     
     transfer_flag_proc : process(i_clk)
@@ -233,13 +230,31 @@ begin
         end if;
     end process;
     
+    transfer_done_proc : process(i_clk)
+    begin
+        if rising_edge(i_clk) then
+            
+            if i_rst = '1' then
+                o_transfer_done <= '0';
+            else
+                if fifo_rd_state = IDLE then
+                    o_transfer_done <= '0';
+                end if;
+                if fifo_rd_state = TRANSFER_WRITE and buffer_addr = buffer_cnt + 1 then
+                    o_transfer_done <= '1';
+                end if;
+            end if;
+            
+        end if;
+    end process;
+    
     -----------------------------------------------------------------------------------
     
     compute_id_value_proc : process(i_clk)
     begin
         if rising_edge(i_clk) then
             
-            if (fifo_rd_state = FIFO_READ and i_fifo_valid = '1') then
+            if fifo_rd_state = FIFO_READ and i_fifo_valid = '1' then
                 neuron_id <= i_fifo_dout;
             end if;
             if fifo_rd_state = ID_VALUE_CALC then
@@ -291,7 +306,7 @@ begin
                     end if;
                 
                 when FIFO_EMPTY =>
-                    if transfer_from_buffer = '1' then
+                    if transfer_from_buffer = '1' and buffer_cnt > 0 then
                         buffer_addr   <= (others => '0');
                         transfer_addr <= i_current_timestamp(transfer_addr'high downto 0) - (buffer_cnt-1);
                     end if;

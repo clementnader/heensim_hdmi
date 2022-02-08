@@ -95,9 +95,11 @@ package neurons_pkg is
     
     -----------------------------------------------------------------------------------
     
-    constant C_VIRT_NB_DIGITS   : INTEGER := integer(floor(log10(real(2**C_LENGTH_VIRT))))+1;    -- 1
-    constant C_ROW_NB_DIGITS    : INTEGER := integer(floor(log10(real(2**C_LENGTH_ROW))))+1;     -- 2
-    constant C_COLUMN_NB_DIGITS : INTEGER := integer(floor(log10(real(2**C_LENGTH_COLUMN))))+1;  -- 2
+    constant C_VIRT_NB_DIGITS   : INTEGER := integer(floor(log10(real(C_MAX_VIRT))))+1;
+    constant C_ROW_NB_DIGITS    : INTEGER := integer(floor(log10(real(C_MAX_ROW))))+1;
+    constant C_COLUMN_NB_DIGITS : INTEGER := integer(floor(log10(real(C_MAX_COLUMN))))+1;
+    
+    constant C_NUMERO_NB_DIGITS : INTEGER := integer(floor(log10(real(C_MAX_ID))))+1;
     
     -----------------------------------------------------------------------------------
     

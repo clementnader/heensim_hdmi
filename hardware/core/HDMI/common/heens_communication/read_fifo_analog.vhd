@@ -75,6 +75,10 @@ architecture Behavioral of read_fifo_analog is
             
         begin
             
+            if analog_value = 0 then  -- value not represented
+                return (C_ANALOG_VALUE_SIZE-1 downto 0 => '1');
+            end if;
+            
             -- redress the value to a positive one
             sum_value := analog_value + C_ANALOG_TRANSFORM_ADDER;  -- + 8000
             
@@ -91,6 +95,10 @@ architecture Behavioral of read_fifo_analog is
             variable res_value : STD_LOGIC_VECTOR(C_ANALOG_VALUE_SIZE-1 downto 0);
             
         begin
+            
+            if div_value = (div_value'range => '1') then  -- value not represented
+                return (C_ANALOG_PLOT_VALUE_SIZE-1 downto 0 => '1');
+            end if;
             
             -- saturate between 0 and C_ANALOG_PLOT_RANGE-1
             if div_value < 0 then
@@ -209,7 +217,7 @@ begin
                     when FIFO_EMPTY =>
                         if i_fifo_empty = '0' then
                             fifo_rd_state <= FIFO_READ;
-                        elsif transfer_from_buffer = '1' then
+                        elsif transfer_from_buffer = '1' and buffer_cnt > 0 then
                             fifo_rd_state <= WAIT_BEFORE_TRANSFER;
                         elsif i_ph_dist = '0' then
                             fifo_rd_state <= IDLE;
@@ -336,7 +344,7 @@ begin
                     end if;
                 
                 when FIFO_EMPTY =>
-                    if transfer_from_buffer = '1' then
+                    if transfer_from_buffer = '1' and buffer_cnt > 0 then
                         buffer_addr   <= (others => '0');
                         transfer_addr <= i_current_timestamp(transfer_addr'high downto 0) - (buffer_cnt-1);
                     end if;

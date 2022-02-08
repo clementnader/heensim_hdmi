@@ -21,6 +21,9 @@
 library IEEE;
     use IEEE.STD_LOGIC_1164.ALL;
 
+library XPM;
+    use XPM.VComponents.ALL;
+
 library work;
     use work.neurons_pkg.ALL;
 
@@ -287,6 +290,9 @@ architecture Behavioral of hdmi_display is
     signal heens_clk_sp_fsm_transfer_done : STD_LOGIC;
     signal pixel_clk_sp_fsm_transfer_done : STD_LOGIC;
     
+    -- Neurons to monitor
+    signal pixel_clk_npos_hdmi_mon : STD_LOGIC_VECTOR(C_LENGTH_SELECTED_NEURONS_INFO-1 downto 0);
+    
 begin
     
 --  ===================================================================================
@@ -346,6 +352,23 @@ begin
             o_dest(0)  => pixel_clk_rst,
             o_dest(1)  => pixel_clk_ph_dist,
             o_dest(2)  => pixel_clk_sp_fsm_transfer_done
+        );
+    
+    -- xpm_cdc_array_single: Single-bit Array Synchronizer
+    -- Xilinx Parameterized Macro, version 2018.2
+    xpm_cdc_array_single_inst : xpm_cdc_array_single
+        generic map (
+            DEST_SYNC_FF   => 2,
+            INIT_SYNC_FF   => 0,
+            SIM_ASSERT_CHK => 0,
+            SRC_INPUT_REG  => 1,
+            WIDTH          => C_LENGTH_SELECTED_NEURONS_INFO
+        )
+        port map (
+            dest_out => pixel_clk_npos_hdmi_mon,
+            dest_clk => i_pixel_clk,
+            src_clk  => i_heens_clk,
+            src_in   => i_npos_hdmi_mon
         );
     
 --  ===================================================================================
@@ -464,7 +487,7 @@ begin
             i_analog_mem_rd_data => analog_mem_rd_data,
             i_extend_vaxis       => extend_vaxis,
             i_transfer_done      => pixel_clk_sp_fsm_transfer_done,
-            i_npos_hdmi_mon      => i_npos_hdmi_mon,
+            i_npos_hdmi_mon      => pixel_clk_npos_hdmi_mon,
             
             o_hcounter           => plot_hcounter,
             o_vcounter           => plot_vcounter,

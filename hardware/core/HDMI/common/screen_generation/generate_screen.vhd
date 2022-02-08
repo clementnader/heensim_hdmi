@@ -354,8 +354,8 @@ begin
                 
                 if i_hcounter = 0 and i_vcounter = 0 then
                     -- Initialization
-                    plot_extend_vaxis <= i_extend_vaxis;
                     o_end_screen      <= '0';
+                    plot_extend_vaxis <= i_extend_vaxis;
                 end if;
                 
                 if i_hcounter = C_H_VISIBLE and i_vcounter = C_V_VISIBLE then

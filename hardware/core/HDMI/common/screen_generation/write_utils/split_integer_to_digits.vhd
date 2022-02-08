@@ -40,26 +40,30 @@ end split_integer_to_digits;
 
 architecture Behavioral of split_integer_to_digits is
     
+    type T_QUOTIENT_SR is ARRAY(NATURAL range <>) of INTEGER range 0 to 10**G_NB_DIGITS-1;
+    
+    signal remain   : T_DIGITS_ARRAY(G_NB_DIGITS-1 downto 0) := (others => 0);
+    signal quotient : T_QUOTIENT_SR(G_NB_DIGITS-1 downto 0) := (others => 0);
+    
 begin
     
+    o_digits <= remain;
+    
     div_by_ten_proc : process(i_clk)
-        
-        variable remain   : INTEGER range 0 to 9;
-        variable quotient : INTEGER range 0 to 10**G_NB_DIGITS-1;
-        
     begin
         if rising_edge(i_clk) then
             
-            quotient := i_integer;
+            quotient(0) <= i_integer;
             
             for i in 0 to G_NB_DIGITS-1 loop
                 
-                if i > 0 and quotient = 0 then
-                    o_digits(i) <= -1;
+                if i > 0 and quotient(i) = 0 then
+                    remain(i) <= -1;
                 else
-                    remain   := quotient mod 10;
-                    quotient := (quotient-remain) / 10;
-                    o_digits(i) <= remain;
+                    remain(i) <= quotient(i) mod 10;
+                    if i < G_NB_DIGITS-1 then
+                        quotient(i+1) <= (quotient(i)-remain(i)) / 10;
+                    end if;
                 end if;
                 
             end loop;

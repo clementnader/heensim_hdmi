@@ -31,6 +31,7 @@ entity HEENSim is
     port (
         i_clk                 : in STD_LOGIC;
         i_rst                 : in STD_LOGIC;
+        i_btn                 : in STD_LOGIC;
         i_spikes_hdmi_rd_fifo : in STD_LOGIC;
         i_analog_fifo_rd_en   : in STD_LOGIC;
         
@@ -49,6 +50,33 @@ end HEENSim;
 
 
 architecture Behavioral of HEENSim is
+    
+    component stabilize_inputs
+        generic (
+            G_NB_INPUTS : INTEGER
+        );
+        port (
+            i_clk : in STD_LOGIC;
+            i_in  : in STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0);
+            
+            o_out : out STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0)
+        );
+    end component;
+    
+    component flip_flop_inputs
+        generic (
+            G_NB_INPUTS : INTEGER
+        );
+        port (
+            i_clk : in STD_LOGIC;
+            i_rst : in STD_LOGIC;
+            i_in  : in STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0);
+            
+            o_out : out STD_LOGIC_VECTOR(G_NB_INPUTS-1 downto 0)
+        );
+    end component;
+    
+    -----------------------------------------------------------------------------------
     
     component blk_mem_gen_4
         port (
@@ -110,13 +138,22 @@ architecture Behavioral of HEENSim is
     
     -----------------------------------------------------------------------------------
     
+    -- Stabilized inputs
+    signal buff_btn : STD_LOGIC;
+    
+    -- Pause input signal
+    signal btn_pause : STD_LOGIC;
+    
+    -----------------------------------------------------------------------------------
+    
     type T_PHASESTATE_FSM is (
         INIT_PHASE,
         CONF_PHASE,
         EXEC_PHASE,
         EXEC_WRITE,
         DIST_PHASE,
-        DIST_READ
+        DIST_READ,
+        PAUSE
     );
     
     signal phase_state : T_PHASESTATE_FSM := INIT_PHASE;
@@ -171,6 +208,31 @@ architecture Behavioral of HEENSim is
     end function;
     
 begin
+    
+    stabilize_inputs_inst : stabilize_inputs
+        generic map (
+            G_NB_INPUTS => 1
+        )
+        port map (
+            i_clk   => i_clk,
+            i_in(0) => i_btn,
+            
+            o_out(0) => buff_btn
+        );
+    
+    flip_flop_inputs_inst : flip_flop_inputs
+        generic map (
+            G_NB_INPUTS => 1
+        )
+        port map (
+            i_clk   => i_clk,
+            i_rst   => i_rst,
+            i_in(0) => buff_btn,
+            
+            o_out(0) => btn_pause
+        );
+    
+    -----------------------------------------------------------------------------------
     
     -- Phase States
     o_ph_init <= '1' when phase_state = INIT_PHASE else '0';
@@ -331,13 +393,22 @@ begin
                         if period_count = G_PERIOD then
                             count        <= (others => '0');
                             period_count <= (others => '0');
-                            phase_state <= EXEC_PHASE;
+                            if btn_pause = '1' then
+                                phase_state <= PAUSE;
+                            else
+                                phase_state <= EXEC_PHASE;
+                            end if;
                         end if;
                     
                     when DIST_READ =>
                         period_count      <= period_count + 1;
                         spikes_fifo_rd_en <= '0';
                         phase_state       <= DIST_PHASE;
+                    
+                    when PAUSE =>
+                        if btn_pause = '0' then
+                            phase_state <= EXEC_PHASE;
+                        end if;
                     
                     when others =>
                         phase_state <= INIT_PHASE;

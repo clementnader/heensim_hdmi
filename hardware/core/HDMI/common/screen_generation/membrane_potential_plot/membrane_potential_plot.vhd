@@ -293,15 +293,25 @@ begin
                     analog_value_before  := mem_column_before(C_ANALOG_PLOT_VALUE_SIZE*(plot_cnt+1)-1 downto C_ANALOG_PLOT_VALUE_SIZE*plot_cnt);
                     analog_value_current := mem_column_current(C_ANALOG_PLOT_VALUE_SIZE*(plot_cnt+1)-1 downto C_ANALOG_PLOT_VALUE_SIZE*plot_cnt);
                     
-                    if analog_value_current < analog_value_before then
-                        if analog_value_current <= shifted_vcounter
-                         and analog_value_before >= shifted_vcounter then
+                    if analog_value_current = (analog_value_current'range => '1') then
+                        -- nothing, value to be excluded
+                    elsif analog_value_before = (analog_value_before'range => '1') then
+                        -- last value has been excluded, there is no vertical line to draw
+                        if analog_value_current = shifted_vcounter then
                             o_dot_pixel(plot_cnt) <= True;
                         end if;
                     else
-                        if analog_value_current >= shifted_vcounter
-                         and analog_value_before <= shifted_vcounter then
-                            o_dot_pixel(plot_cnt) <= True;
+                        -- a vertical line is drawn between the last and the current value
+                        if analog_value_current < analog_value_before then
+                            if analog_value_current <= shifted_vcounter
+                             and analog_value_before >= shifted_vcounter then
+                                o_dot_pixel(plot_cnt) <= True;
+                            end if;
+                        else
+                            if analog_value_current >= shifted_vcounter
+                             and analog_value_before <= shifted_vcounter then
+                                o_dot_pixel(plot_cnt) <= True;
+                            end if;
                         end if;
                     end if;
                     

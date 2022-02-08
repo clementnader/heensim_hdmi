@@ -63,7 +63,7 @@ architecture Behavioral of write_info is
     -----------------------------------------------------------------------------------
     
     constant C_CHIP_STR : STRING := "Number of Chips:";
-    constant C_VIRT_STR : STRING := "Number of Virtualization Levels:";
+    constant C_VIRT_STR : STRING := "Number of Virtualization levels:";
     constant C_ROW_STR  : STRING := "Number of Rows:";
     constant C_COL_STR  : STRING := "Number of Columns:";
     
